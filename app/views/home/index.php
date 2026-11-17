@@ -215,7 +215,7 @@
   <div class="container">
     <div style="text-align: center; max-width: 600px; margin: 0 auto 60px;" class="reveal-on-scroll">
       <span class="badge badge-sage" style="margin-bottom: 12px;">Seamless Experience</span>
-      <h2>How AuraCraft Works</h2>
+      <h2>How NEARZO Works</h2>
       <p style="margin-top: 10px;">Three effortless steps from selecting a discipline to an immaculate living space.</p>
     </div>
 
@@ -244,7 +244,7 @@
           3
         </div>
         <h4 style="margin-bottom: 12px;">Flawless Execution</h4>
-        <p style="font-size: 0.95rem;">Pay securely upon total satisfaction, protected by our ₹25,000 AuraCraft Craftsmanship Guarantee.</p>
+        <p style="font-size: 0.95rem;">Pay securely upon total satisfaction, protected by our ₹25,000 NEARZO Craftsmanship Guarantee.</p>
       </div>
     </div>
   </div>
@@ -284,7 +284,7 @@
         <span class="badge badge-terracotta" style="margin-bottom: 12px;">Partner Program</span>
         <h2>Are You a Master Craftsman or Home Care Specialist?</h2>
         <p style="margin-top: 12px; font-size: 1.05rem;">
-          Expand your client base, set your own schedule, receive instant bank payouts, and enjoy premium support on the AuraCraft network.
+          Expand your client base, set your own schedule, receive instant bank payouts, and enjoy premium support on the NEARZO network.
         </p>
       </div>
       <div style="display: flex; gap: 16px;">

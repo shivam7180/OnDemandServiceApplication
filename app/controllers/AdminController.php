@@ -75,7 +75,7 @@ class AdminController extends Controller {
         ];
 
         $data = [
-            'pageTitle'        => 'Admin Console | AuraCraft Operations Control',
+            'pageTitle'        => 'Admin Console | NEARZO Operations Control',
             'activePage'       => 'admin',
             'adminUser'        => $admin,
             'stats'            => $stats,

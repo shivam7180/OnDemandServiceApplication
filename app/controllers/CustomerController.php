@@ -82,7 +82,7 @@ class CustomerController extends Controller {
         }
 
         $data = [
-            'pageTitle'     => 'My Dashboard | AuraCraft Client Portal',
+            'pageTitle'     => 'My Dashboard | NEARZO Client Portal',
             'activePage'    => 'customer',
             'customer'      => $customer,
             'activeBooking' => $activeBooking,

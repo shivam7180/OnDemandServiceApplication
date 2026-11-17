@@ -123,7 +123,7 @@ class BookingController extends Controller {
         }
 
         $data = [
-            'pageTitle'  => 'Live Booking Tracker #' . $booking['code'] . ' | AuraCraft',
+            'pageTitle'  => 'Live Booking Tracker #' . $booking['code'] . ' | NEARZO',
             'activePage' => 'track',
             'booking'    => $booking
         ];

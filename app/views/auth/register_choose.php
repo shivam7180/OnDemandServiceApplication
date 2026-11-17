@@ -4,8 +4,10 @@
   <div class="container" style="max-width: 800px;">
     
     <div style="text-align: center; margin-bottom: 40px;" class="reveal-on-scroll">
-      <div class="brand-icon" style="margin: 0 auto 16px; width: 50px; height: 50px; font-size: 1.5rem; background: var(--forest-green);">✦</div>
-      <h1 style="font-size: 2.2rem; margin-bottom: 10px;">Join the AuraCraft Platform</h1>
+      <div style="width: 58px; height: 58px; border-radius: 16px; background: #FAF8F3; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(35,76,61,0.12); border: 1px solid var(--border-light);">
+        <img src="<?= BASE_URL ?>/public/images/nearzo-logo.svg" alt="NEARZO" width="44" height="44" style="display: block;">
+      </div>
+      <h1 style="font-size: 2.2rem; margin-bottom: 10px;">Join NEARZO</h1>
       <p style="font-size: 1.05rem; color: var(--charcoal-muted); max-width: 540px; margin: 0 auto;">
         Choose how you would like to continue. Book verified specialists or grow your service practice.
       </p>

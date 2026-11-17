@@ -1,8 +1,8 @@
 /**
- * AuraCraft Interactive Maps Engine
+ * NEARZO Interactive Maps Engine
  * Supports OpenStreetMap (Leaflet), Google Maps JS API,
  * Official Google Maps Direct Embed, and Real GPS Telemetry.
- * Styled with AuraCraft Brand Palette (Forest Green & Terracotta).
+ * Styled with NEARZO Brand Palette (Forest Green & Terracotta).
  */
 
 const AuraMaps = {
@@ -364,3 +364,5 @@ const AuraMaps = {
     `;
   }
 };
+
+window.NearzoMaps = AuraMaps;

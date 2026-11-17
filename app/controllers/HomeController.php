@@ -8,7 +8,7 @@ class HomeController extends Controller {
 
     public function index() {
         $data = [
-            'pageTitle' => 'AuraCraft | Premium On-Demand Home Services & Master Craftsmen',
+            'pageTitle' => 'NEARZO | Nearby Verified Home & Living Services',
             'activePage' => 'home'
         ];
         $this->view('home/index', $data);
@@ -16,7 +16,7 @@ class HomeController extends Controller {
 
     public function about() {
         $data = [
-            'pageTitle' => 'About Us | The AuraCraft Standard of Craftsmanship',
+            'pageTitle' => 'About Us | The NEARZO Standard of Service',
             'activePage' => 'about'
         ];
         $this->view('home/about', $data);

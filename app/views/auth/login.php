@@ -16,9 +16,11 @@
       </div>
 
       <div style="text-align: center; margin-bottom: 24px;">
-        <div class="brand-icon" style="margin: 0 auto 14px; width: 48px; height: 48px; font-size: 1.4rem; background: var(--forest-green);">✦</div>
+        <div style="width: 52px; height: 52px; border-radius: 14px; background: #FAF8F3; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(35,76,61,0.12); border: 1px solid var(--border-light);">
+          <img src="<?= BASE_URL ?>/public/images/nearzo-logo.svg" alt="NEARZO" width="38" height="38" style="display: block;">
+        </div>
         <h2 id="loginHeading" style="font-size: 1.85rem; margin-bottom: 6px;">Customer Sign In</h2>
-        <p id="loginSubheading" style="font-size: 0.95rem; color: var(--charcoal-muted);">Sign in to book home services, track live GPS arrivals, and view your appointments.</p>
+        <p id="loginSubheading" style="font-size: 0.95rem; color: var(--charcoal-muted);">Sign in to NEARZO to find local specialists, track live GPS arrivals, and manage bookings.</p>
       </div>
 
       <!-- Quick Demo Account Fillers -->

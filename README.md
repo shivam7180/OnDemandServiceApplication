@@ -1,6 +1,6 @@
-# AuraCraft — On-Demand Home Care & Master Craftsmen Platform
+# NEARZO — Nearby Services On-Demand & Two-Sided Marketplace
 
-A commercial-grade, responsive, and animated on-demand service application crafted with a custom **Core PHP MVC architecture**, **MySQL**, **Vanilla JavaScript**, **CSS3**, and **Google Maps API**.
+A commercial-grade, responsive, and animated on-demand service application crafted with a custom **Core PHP MVC architecture**, **MySQL**, **Vanilla JavaScript**, **CSS3**, **Leaflet**, and **Google Maps API**.
 
 ---
 

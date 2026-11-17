@@ -17,7 +17,7 @@ class AuthController extends Controller {
         }
 
         $data = [
-            'pageTitle'  => 'Sign In | AuraCraft On-Demand',
+            'pageTitle'  => 'Sign In | NEARZO On-Demand',
             'activePage' => 'auth'
         ];
         $this->view('auth/login', $data);
@@ -89,7 +89,7 @@ class AuthController extends Controller {
         }
 
         $data = [
-            'pageTitle'  => 'Join AuraCraft | Choose Account Type',
+            'pageTitle'  => 'Join NEARZO | Choose Account Type',
             'activePage' => 'auth'
         ];
         $this->view('auth/register_choose', $data);
@@ -104,7 +104,7 @@ class AuthController extends Controller {
         }
 
         $data = [
-            'pageTitle'  => 'Create Customer Account | AuraCraft',
+            'pageTitle'  => 'Create Customer Account | NEARZO',
             'activePage' => 'auth'
         ];
         $this->view('auth/register_customer', $data);
@@ -188,7 +188,7 @@ class AuthController extends Controller {
                 'avatar'    => null
             ];
 
-            $_SESSION['flash_success'] = "Welcome to AuraCraft! Your customer account has been created.";
+            $_SESSION['flash_success'] = "Welcome to NEARZO! Your customer account has been created.";
             $this->redirect('customer/dashboard');
 
         } catch (Throwable $e) {
@@ -206,7 +206,7 @@ class AuthController extends Controller {
         }
 
         $data = [
-            'pageTitle'  => 'Apply as Service Partner | AuraCraft',
+            'pageTitle'  => 'Apply as Service Partner | NEARZO',
             'activePage' => 'auth'
         ];
         $this->view('auth/register_provider', $data);

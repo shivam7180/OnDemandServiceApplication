@@ -7,7 +7,7 @@
       <span class="badge badge-sage" style="margin-bottom: 16px;">✦ Our Origin & Purpose</span>
       <h1 style="margin-bottom: 20px;">Redefining the standard of care for exceptional homes.</h1>
       <p style="font-size: 1.15rem; line-height: 1.7; color: var(--charcoal-light);">
-        AuraCraft was founded on a simple conviction: finding a tradesperson or housekeeper should feel as dependable, transparent, and refined as staying at a boutique hotel.
+        NEARZO was founded on a simple conviction: finding a tradesperson or housekeeper should feel as dependable, transparent, and refined as staying at a boutique hotel.
       </p>
     </div>
   </div>
@@ -40,7 +40,7 @@
         <div style="font-size: 2.2rem; margin-bottom: 16px;">🛡️</div>
         <h3 style="margin-bottom: 12px; font-size: 1.35rem;">₹50,000 Craft Guarantee</h3>
         <p style="font-size: 0.95rem;">
-          Every appointment booked on AuraCraft is bonded and insured. If any service does not meet your exacting standards, we send another specialist to rectify it free of charge.
+          Every appointment booked on NEARZO is bonded and insured. If any service does not meet your exacting standards, we send another specialist to rectify it free of charge.
         </p>
       </div>
     </div>

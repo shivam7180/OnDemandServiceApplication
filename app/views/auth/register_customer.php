@@ -59,7 +59,7 @@
 
         <div style="margin: 16px 0 24px; display: flex; gap: 10px; align-items: flex-start; font-size: 0.88rem; color: var(--charcoal-light);">
           <input type="checkbox" required id="terms" style="margin-top: 4px; accent-color: var(--forest-green);">
-          <label for="terms">I agree to AuraCraft's Terms of Service, Privacy Policy, and Craft Guarantee terms.</label>
+          <label for="terms">I agree to NEARZO's Terms of Service, Privacy Policy, and Escrow Guarantee terms.</label>
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">

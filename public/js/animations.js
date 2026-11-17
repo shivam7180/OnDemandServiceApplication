@@ -1,5 +1,5 @@
 /**
- * AuraCraft Animation Controller
+ * NEARZO Animation Controller
  * IntersectionObserver scroll reveal, number counter up, and micro-interactions
  */
 

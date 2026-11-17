@@ -1,5 +1,5 @@
 /**
- * AuraCraft Core Client Script
+ * NEARZO Core Client Script
  * Handles UI interactions, modal controls, responsive menus, toast notifications,
  * and automatic HTML5 browser geolocation fetching.
  */
@@ -199,3 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   AuraCraft.initTabs();
   AuraCraft.initModals();
 });
+
+// Brand namespace alias
+window.Nearzo = AuraCraft;
+window.NEARZO = AuraCraft;

@@ -77,4 +77,4 @@ INSERT INTO `reviews` (`booking_id`, `customer_id`, `provider_id`, `rating`, `co
 INSERT INTO `notifications` (`user_id`, `title`, `message`, `type`, `link`) VALUES
 (2, 'Booking Confirmed', 'Your plumbing appointment BK-89021 with David Sterling is confirmed for Nov 20.', 'booking', '/customer/bookings/BK-89021'),
 (4, 'New Request Received', 'You have a new booking request BK-89021 from Sophia Miller.', 'booking', '/provider/bookings/BK-89021'),
-(1, 'System Initialized', 'Welcome to AuraCraft On-Demand Service Platform Admin Console.', 'system', '/admin/dashboard');
+(1, 'System Initialized', 'Welcome to NEARZO On-Demand Service Platform Admin Console.', 'system', '/admin/dashboard');

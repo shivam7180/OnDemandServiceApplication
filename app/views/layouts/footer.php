@@ -5,11 +5,15 @@
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <div class="brand-logo" style="color: #FFFFFF; margin-bottom: 12px;">
-            <div class="brand-icon" style="background: var(--terracotta);">✦</div>
-            <span>AuraCraft</span>
+          <div class="brand-logo" style="color: #FFFFFF; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; padding: 4px;">
+              <img src="<?= BASE_URL ?>/public/images/nearzo-logo.svg" alt="NEARZO Logo" width="30" height="30" style="display: block;">
+            </div>
+            <span style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF;">
+              NEAR<span style="color: var(--terracotta);">ZO</span>
+            </span>
           </div>
-          <p>Connecting conscientious homeowners with rigorously vetted artisans, certified technicians, and luxury home specialists.</p>
+          <p>Connecting local residents with verified electricians, master plumbers, AC technicians, and repair specialists within a 15 km radius.</p>
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <span class="badge badge-sage">✓ Verified Pros</span>
             <span class="badge badge-terracotta">★ 4.9/5 Rating</span>
@@ -43,7 +47,7 @@
           <p style="font-size: 0.92rem; color: #A3B3A9; margin-bottom: 16px;">
             Receive seasonal home maintenance schedules, curated architectural guides, and partner perks.
           </p>
-          <form onsubmit="event.preventDefault(); AuraCraft.showToast('Thank you for subscribing to AuraCraft journal.', 'success');" style="display: flex; gap: 8px;">
+          <form onsubmit="event.preventDefault(); Nearzo.showToast('Thank you for subscribing to NEARZO updates.', 'success');" style="display: flex; gap: 8px;">
             <input type="email" required placeholder="Enter your email" class="form-control" style="background: #253930; border-color: #354F43; color: #FFF; font-size: 0.9rem; padding: 10px 14px;">
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 10px 18px;">Join</button>
           </form>
@@ -51,7 +55,7 @@
       </div>
 
       <div class="footer-bottom">
-        <div>&copy; <?= date('Y') ?> AuraCraft Technologies Inc. All rights reserved. Crafted with care.</div>
+        <div>&copy; <?= date('Y') ?> NEARZO Technologies Inc. All rights reserved. Nearby Services On-Demand.</div>
         <div style="display: flex; gap: 24px;">
           <a href="#">Privacy Policy</a>
           <a href="#">Terms of Service</a>
@@ -69,7 +73,7 @@
   <?php if (!empty($_SESSION['flash_success'])): ?>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        AuraCraft.showToast(<?= json_encode($_SESSION['flash_success']) ?>, 'success');
+        (window.Nearzo || window.AuraCraft).showToast(<?= json_encode($_SESSION['flash_success']) ?>, 'success');
       });
     </script>
     <?php unset($_SESSION['flash_success']); ?>
@@ -78,7 +82,7 @@
   <?php if (!empty($_SESSION['flash_error'])): ?>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        AuraCraft.showToast(<?= json_encode($_SESSION['flash_error']) ?>, 'error');
+        (window.Nearzo || window.AuraCraft).showToast(<?= json_encode($_SESSION['flash_error']) ?>, 'error');
       });
     </script>
     <?php unset($_SESSION['flash_error']); ?>

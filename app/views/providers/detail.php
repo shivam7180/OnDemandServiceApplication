@@ -10,7 +10,7 @@
 
       <div style="flex: 1; min-width: 280px;">
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
-          <span class="badge badge-sage">✓ Certified AuraCraft Partner</span>
+          <span class="badge badge-sage">✓ Certified NEARZO Partner</span>
           <span class="badge badge-success">Available for Booking</span>
         </div>
         <h1 style="font-size: 2.2rem; margin-bottom: 4px;"><?= htmlspecialchars($provider['name']) ?></h1>
@@ -128,7 +128,7 @@
           <div style="background: var(--soft-sage-light); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--forest-green); font-size: 0.9rem;">
               <span>🛡️</span>
-              <span>AuraCraft ₹25,000 Bonded Guarantee</span>
+              <span>NEARZO ₹25,000 Bonded Guarantee</span>
             </div>
           </div>
 

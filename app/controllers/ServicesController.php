@@ -40,7 +40,7 @@ class ServicesController extends Controller {
         }
 
         $data = [
-            'pageTitle'   => 'Explore Services | AuraCraft Curated Disciplines',
+            'pageTitle'   => 'Explore Services | NEARZO Curated Disciplines',
             'activePage'  => 'services',
             'services'    => $services,
             'categories'  => $categories,

@@ -1,5 +1,5 @@
 """
-AuraCraft Local Development Server
+NEARZO Local Development Server
 Provides instant local preview on http://localhost:8000
 Supports two-sided marketplace (Customer & Service Provider),
 Haversine location-based search within 15 km, session cookies,
@@ -55,7 +55,7 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     content = re.sub(r'<\?php\s+require_once\s+ROOT_PATH\s*\.\s*[\'"]/app/views/layouts/footer\.php[\'"];\s*\?>', footer, content)
     
     # Context defaults
-    page_title = context.get('pageTitle', 'AuraCraft | Premium On-Demand Services')
+    page_title = context.get('pageTitle', 'NEARZO | Nearby Services On-Demand')
     location = context.get('location', 'Mumbai')
     selected_cat = context.get('selectedCat', 'all')
     active_page = context.get('activePage', '')
@@ -73,7 +73,9 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     
     # Replace standard tokens
     content = content.replace("<?= BASE_URL ?>", "")
+    content = content.replace("<?= htmlspecialchars($pageTitle ?? 'NEARZO | Nearby Services On-Demand') ?>", page_title)
     content = content.replace("<?= htmlspecialchars($pageTitle ?? 'AuraCraft | Premium On-Demand Services') ?>", page_title)
+    content = content.replace("<?= htmlspecialchars($pageTitle ?? 'NEARZO') ?>", page_title)
     content = content.replace("<?= htmlspecialchars($pageTitle ?? 'AuraCraft') ?>", page_title)
     content = content.replace("<?= htmlspecialchars($location) ?>", location)
     content = content.replace("<?= $radiusKm ?>", radius_km)
@@ -155,7 +157,7 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
             <span style="width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF; animation: pulseGlow 1.5s infinite;"></span>
             <span>Live Tracker</span>
           </a>
-          <button type="button" class="btn btn-sage btn-sm" style="padding: 8px 12px; position: relative;" onclick="AuraCraft.showToast('Specialist David Sterling has received your request', 'info')" title="Notifications">
+          <button type="button" class="btn btn-sage btn-sm" style="padding: 8px 12px; position: relative;" onclick="Nearzo.showToast('Specialist David Sterling has received your request', 'info')" title="Notifications">
             🔔 <span style="position: absolute; top: -4px; right: -4px; background: var(--terracotta); color: #FFF; width: 18px; height: 18px; border-radius: 50%; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: 700;">1</span>
           </button>
           <a href="{dash_url}" class="btn btn-sage btn-sm">
@@ -168,7 +170,7 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     else:
         actions_html = '''<div class="nav-actions">
           <a href="/auth/login" class="btn btn-outline btn-sm">Sign In</a>
-          <button type="button" class="btn btn-primary btn-sm" onclick="AuraCraft.openModal('roleChooseModal')">Get Started</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="Nearzo.openModal('roleChooseModal')">Get Started</button>
           <button class="mobile-toggle" id="mobileMenuToggle" aria-label="Toggle navigation">☰</button>
         </div>'''
 
@@ -213,25 +215,25 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         routes = {
-            '': ('home/index.php', {'activePage': 'home', 'pageTitle': 'AuraCraft | Premium On-Demand Home Services'}),
+            '': ('home/index.php', {'activePage': 'home', 'pageTitle': 'NEARZO | Nearby Services On-Demand'}),
             'home': ('home/index.php', {'activePage': 'home'}),
-            'home/about': ('home/about.php', {'activePage': 'about', 'pageTitle': 'About Us | AuraCraft'}),
-            'home/contact': ('home/contact.php', {'activePage': 'contact', 'pageTitle': 'Contact Concierge | AuraCraft'}),
-            'services': ('services/index.php', {'activePage': 'services', 'pageTitle': 'Curated Disciplines | AuraCraft'}),
-            'providers': ('providers/index.php', {'activePage': 'providers', 'pageTitle': 'Find Specialists within 15 km | AuraCraft'}),
-            'booking/track': ('booking/track.php', {'activePage': 'track', 'pageTitle': 'Live Appointment Tracker | AuraCraft'}),
-            'auth/login': ('auth/login.php', {'activePage': 'auth', 'pageTitle': 'Sign In | AuraCraft'}),
-            'auth/register': ('auth/register_choose.php', {'activePage': 'auth', 'pageTitle': 'Choose Account Type | AuraCraft'}),
-            'auth/choose': ('auth/register_choose.php', {'activePage': 'auth', 'pageTitle': 'Choose Account Type | AuraCraft'}),
-            'auth/registerCustomer': ('auth/register_customer.php', {'activePage': 'auth', 'pageTitle': 'Customer Membership | AuraCraft'}),
-            'auth/registerProvider': ('auth/register_provider.php', {'activePage': 'auth', 'pageTitle': 'Partner Network | AuraCraft'}),
-            'customer/dashboard': ('customer/dashboard.php', {'activePage': 'customer', 'pageTitle': 'Customer Portal | AuraCraft'}),
-            'provider/dashboard': ('provider/dashboard.php', {'activePage': 'provider', 'pageTitle': 'Partner Console | AuraCraft'}),
-            'admin/dashboard': ('admin/dashboard.php', {'activePage': 'admin', 'pageTitle': 'Super Admin | AuraCraft'})
+            'home/about': ('home/about.php', {'activePage': 'about', 'pageTitle': 'About Us | NEARZO'}),
+            'home/contact': ('home/contact.php', {'activePage': 'contact', 'pageTitle': 'Contact Concierge | NEARZO'}),
+            'services': ('services/index.php', {'activePage': 'services', 'pageTitle': 'Curated Disciplines | NEARZO'}),
+            'providers': ('providers/index.php', {'activePage': 'providers', 'pageTitle': 'Find Specialists within 15 km | NEARZO'}),
+            'booking/track': ('booking/track.php', {'activePage': 'track', 'pageTitle': 'Live Appointment Tracker | NEARZO'}),
+            'auth/login': ('auth/login.php', {'activePage': 'auth', 'pageTitle': 'Sign In | NEARZO'}),
+            'auth/register': ('auth/register_choose.php', {'activePage': 'auth', 'pageTitle': 'Choose Account Type | NEARZO'}),
+            'auth/choose': ('auth/register_choose.php', {'activePage': 'auth', 'pageTitle': 'Choose Account Type | NEARZO'}),
+            'auth/registerCustomer': ('auth/register_customer.php', {'activePage': 'auth', 'pageTitle': 'Customer Membership | NEARZO'}),
+            'auth/registerProvider': ('auth/register_provider.php', {'activePage': 'auth', 'pageTitle': 'Partner Network | NEARZO'}),
+            'customer/dashboard': ('customer/dashboard.php', {'activePage': 'customer', 'pageTitle': 'Customer Portal | NEARZO'}),
+            'provider/dashboard': ('provider/dashboard.php', {'activePage': 'provider', 'pageTitle': 'Partner Console | NEARZO'}),
+            'admin/dashboard': ('admin/dashboard.php', {'activePage': 'admin', 'pageTitle': 'Super Admin | NEARZO'})
         }
         
         if path.startswith('providers/detail'):
-            html = render_php_view('providers/detail.php', {'activePage': 'providers', 'pageTitle': 'Specialist Profile | AuraCraft'}, auth_state)
+            html = render_php_view('providers/detail.php', {'activePage': 'providers', 'pageTitle': 'Specialist Profile | NEARZO'}, auth_state)
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers()
@@ -239,7 +241,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             return
             
         if path.startswith('booking/track'):
-            html = render_php_view('booking/track.php', {'activePage': 'track', 'pageTitle': 'Live Booking Tracker | AuraCraft'}, auth_state)
+            html = render_php_view('booking/track.php', {'activePage': 'track', 'pageTitle': 'Live Booking Tracker | NEARZO'}, auth_state)
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers()
@@ -306,5 +308,5 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     with socketserver.TCPServer(("", PORT), AuraHandler) as httpd:
-        print(f"AuraCraft server listening at http://localhost:{PORT}")
+        print(f"NEARZO server listening at http://localhost:{PORT}")
         httpd.serve_forever()

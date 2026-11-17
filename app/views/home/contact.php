@@ -32,16 +32,16 @@
           <div style="font-size: 1.8rem; margin-bottom: 12px; color: var(--terracotta);">✉️</div>
           <h4>Written Inquiries & Partnerships</h4>
           <p style="font-size: 0.95rem; margin: 8px 0 12px;">General inquiries, press contacts, or provider application assistance.</p>
-          <a href="mailto:concierge@auracraft.com" style="font-weight: 700; color: var(--terracotta); font-size: 1.05rem;">concierge@auracraft.com</a>
+          <a href="mailto:concierge@nearzo.com" style="font-weight: 700; color: var(--terracotta); font-size: 1.05rem;">concierge@nearzo.com</a>
         </div>
 
         <div class="card">
           <div style="font-size: 1.8rem; margin-bottom: 12px; color: var(--forest-green);">📍</div>
           <h4>Headquarters</h4>
           <p style="font-size: 0.95rem; margin: 8px 0 0;">
-            AuraCraft Technologies Inc.<br>
-            450 Mission Street, Suite 1400<br>
-            San Francisco, CA 94105
+            NEARZO Technologies Inc.<br>
+            Bandra Kurla Complex, Bandra East<br>
+            Mumbai, Maharashtra 400051
           </p>
         </div>
       </div>

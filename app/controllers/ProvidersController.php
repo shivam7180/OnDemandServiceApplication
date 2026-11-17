@@ -61,7 +61,7 @@ class ProvidersController extends Controller {
         }
 
         $data = [
-            'pageTitle'          => 'Find Local Specialists within 15 km | AuraCraft',
+            'pageTitle'          => 'Find Local Specialists within 15 km | NEARZO',
             'activePage'         => 'providers',
             'providers'          => $providers,
             'selectedProfession' => $profession,
@@ -128,7 +128,7 @@ class ProvidersController extends Controller {
         }
 
         $data = [
-            'pageTitle'  => htmlspecialchars($provider['business_name'] ?? 'Provider Profile') . ' | AuraCraft',
+            'pageTitle'  => htmlspecialchars($provider['business_name'] ?? 'Provider Profile') . ' | NEARZO',
             'activePage' => 'providers',
             'provider'   => $provider
         ];

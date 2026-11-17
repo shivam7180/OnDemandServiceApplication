@@ -41,8 +41,8 @@ $baseUrl = preg_replace('/\/public$/', '', $baseUrl);
 define('BASE_URL', $baseUrl);
 
 // Application Meta
-define('APP_NAME', 'AuraCraft On-Demand');
-define('APP_TAGLINE', 'Bespoke Home & Living Services');
+define('APP_NAME', 'NEARZO');
+define('APP_TAGLINE', 'Nearby Verified Home & Living Services');
 
 // Database Credentials (Standard XAMPP default)
 define('DB_HOST', 'localhost');

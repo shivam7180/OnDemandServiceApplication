@@ -99,7 +99,7 @@ class ProviderController extends Controller {
         }
 
         $data = [
-            'pageTitle'       => 'Partner Dashboard | AuraCraft Pro Console',
+            'pageTitle'       => 'Partner Dashboard | NEARZO Pro Console',
             'activePage'      => 'provider',
             'provider'        => $provider,
             'pendingRequests' => $pendingRequests,
