@@ -203,16 +203,17 @@ def get_auth_state(headers):
     user_lat = float(cookies['auth_lat'].value) if 'auth_lat' in cookies else 19.0760
     user_lng = float(cookies['auth_lng'].value) if 'auth_lng' in cookies else 72.8777
     user_biz = urllib.parse.unquote(cookies['auth_biz'].value) if 'auth_biz' in cookies else ''
+    is_demo = ('demo_account' in cookies and cookies['demo_account'].value == '1')
     
-    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, user_biz
+    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, user_biz, is_demo
 
 def render_php_view(view_relative_path, context=None, auth_state=None):
     if context is None:
         context = {}
     if auth_state is None:
-        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client', 19.0760, 72.8777, '')
+        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client', 19.0760, 72.8777, '', False)
     
-    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, user_biz = auth_state
+    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, user_biz, is_demo = auth_state
     
     file_path = os.path.join(BASE_DIR, 'app', 'views', view_relative_path)
     if not os.path.exists(file_path):
@@ -268,9 +269,9 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     content = content.replace("<?= $progressWidth ?>", "75%")
     content = content.replace("<?= $provider['avatar'] ?>", "👨‍🔧")
 
-    # Provider identity and metrics
-    is_demo_provider = (user_name.lower() == 'david') or (not is_authenticated and view_relative_path == 'provider/dashboard.php')
-    is_new_provider = (user_role == 'provider') and not is_demo_provider
+    # Provider identity and metrics: ONLY explicit demo_account cookie activates demo stats
+    is_demo_provider = is_demo and (user_name.lower() == 'david')
+    is_new_provider = not is_demo_provider
 
     provider_name = user_fullname if is_new_provider else 'David Sterling'
     provider_biz = (user_biz if user_biz else f"{user_fullname}'s Services") if is_new_provider else 'Sterling Master Plumbing & Heating'
@@ -805,6 +806,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(provider_first)}; Path=/')
                 self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(provider_full)}; Path=/')
                 self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(provider_biz_val)}; Path=/')
+                self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
                 self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
                 self.send_header('Location', '/provider/dashboard')
             elif 'sophia' in email:
@@ -856,6 +858,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(biz_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(city)}; Path=/')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
             self.send_header('Location', '/provider/dashboard')
 
