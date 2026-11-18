@@ -42,11 +42,16 @@
           </div>
 
           <p style="font-size: 0.82rem; color: var(--charcoal-muted); margin: 0 0 12px; line-height: 1.4;">
-            Tap the button above or tap directly on the map below. NEARZO automatically detects your address and connects you with verified trade specialists strictly within <strong>25 km</strong>.
+            Type your address manually or use GPS auto-detect. NEARZO automatically locates your real coordinates on the live map and displays service providers strictly within <strong>25 km</strong>.
           </p>
 
           <div class="form-group" style="margin-bottom: 12px;">
-            <input type="text" id="custStreetAddress" name="address" class="form-control" required placeholder="e.g. Flat 302, Green Acres, Bandra West" value="Flat 302, Green Acres, Bandra West">
+            <div style="position: relative;">
+              <input type="text" id="custStreetAddress" name="address" class="form-control" required placeholder="Type your street, area, or society (e.g. Linking Road, Bandra West)" value="" style="padding-right: 105px;" oninput="handleManualAddressInput()" onblur="forwardGeocodeCustomerAddress()">
+              <button type="button" class="btn btn-sage btn-sm" style="position: absolute; right: 6px; top: 6px; padding: 6px 14px; font-size: 0.8rem; font-weight: 700;" onclick="forwardGeocodeCustomerAddress()">
+                🔍 Locate
+              </button>
+            </div>
           </div>
 
           <!-- Embedded Interactive Location Map -->
@@ -248,6 +253,73 @@ async function updateCustomerLocation(lat, lng, doGeocode = true) {
     } catch(err) {
       console.warn('Geocoding notice:', err);
     }
+  }
+}
+
+// Forward Geocoding: Automatically fetch real map location when user manually types address
+let manualGeocodeTimer = null;
+function handleManualAddressInput() {
+  clearTimeout(manualGeocodeTimer);
+  manualGeocodeTimer = setTimeout(() => {
+    forwardGeocodeCustomerAddress();
+  }, 650);
+}
+
+async function forwardGeocodeCustomerAddress() {
+  const street = (document.getElementById('custStreetAddress')?.value || '').trim();
+  const city = (document.getElementById('custCity')?.value || 'Mumbai').trim();
+
+  if (street.length < 3) return;
+
+  const status = document.getElementById('custLocationStatus');
+  if (status) {
+    status.innerHTML = `⏳ Locating on real map: <strong>${street}</strong>...`;
+    status.style.color = 'var(--terracotta)';
+  }
+
+  const query = `${street}, ${city}, Maharashtra, India`;
+
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+    if (resp.ok) {
+      const results = await resp.json();
+      if (results && results.length > 0) {
+        const item = results[0];
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon);
+
+        // Update Coordinates, Pin, Circle, and Map View (WITHOUT re-triggering reverse geocode)
+        updateCustomerLocation(lat, lng, false);
+        if (regCustMap) {
+          regCustMap.flyTo([lat, lng], 14, { duration: 1.2 });
+        }
+        if (status) {
+          status.innerHTML = `📍 Real Location Locked: <strong>Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}</strong>`;
+          status.style.color = 'var(--forest-green)';
+        }
+        const shortName = item.display_name.split(',').slice(0, 2).join(',');
+        (window.Nearzo || window.AuraCraft).showToast(`Real location pinned: ${shortName}`, 'success');
+        return;
+      }
+    }
+
+    // Fallback: try querying without strict formatting
+    const fallbackResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(street + ', Mumbai')}&limit=1`);
+    if (fallbackResp.ok) {
+      const r2 = await fallbackResp.json();
+      if (r2 && r2.length > 0) {
+        const lat = parseFloat(r2[0].lat);
+        const lng = parseFloat(r2[0].lon);
+        updateCustomerLocation(lat, lng, false);
+        if (regCustMap) regCustMap.flyTo([lat, lng], 14, { duration: 1.2 });
+        if (status) {
+          status.innerHTML = `📍 Real Location Locked: <strong>Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}</strong>`;
+          status.style.color = 'var(--forest-green)';
+        }
+      }
+    }
+  } catch(e) {
+    console.warn('Forward geocode notice:', e);
   }
 }
 

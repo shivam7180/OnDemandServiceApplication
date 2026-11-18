@@ -190,6 +190,61 @@ CATALOG_PROVIDERS = [
     }
 ]
 
+KNOWN_LOCATIONS = {
+    'bandra west': (19.0600, 72.8360),
+    'bandra east': (19.0630, 72.8520),
+    'bandra': (19.0600, 72.8360),
+    'khar': (19.0700, 72.8350),
+    'santacruz': (19.0840, 72.8420),
+    'juhu': (19.1020, 72.8270),
+    'andheri west': (19.1363, 72.8277),
+    'andheri east': (19.1155, 72.8660),
+    'andheri': (19.1197, 72.8464),
+    'dadar west': (19.0220, 72.8410),
+    'dadar': (19.0178, 72.8478),
+    'worli': (19.0134, 72.8150),
+    'powai': (19.1176, 72.9060),
+    'kurla': (19.0657, 72.8790),
+    'ghatkopar': (19.0860, 72.9080),
+    'chembur': (19.0522, 72.8994),
+    'colaba': (18.9067, 72.8147),
+    'nariman point': (18.9256, 72.8242),
+    'churchgate': (18.9322, 72.8264),
+    'fort': (18.9345, 72.8356),
+    'malad': (19.1860, 72.8485),
+    'borivali': (19.2307, 72.8567),
+    'kandivali': (19.2064, 72.8526),
+    'goregaon': (19.1663, 72.8526),
+    'vashi': (19.0771, 72.9986),
+    'navi mumbai': (19.0330, 73.0297),
+    'thane west': (19.2183, 72.9781),
+    'thane': (19.2183, 72.9781),
+    'kalyan east': (19.2403, 73.1305),
+    'kalyan': (19.2437, 73.1355),
+    'dombivli': (19.2184, 73.0867),
+    'panvel': (18.9894, 73.1175),
+    'pune': (18.5204, 73.8567),
+    'mumbai': (19.0760, 72.8777)
+}
+
+def geocode_address(query_str):
+    if not query_str:
+        return (19.0760, 72.8777)
+    q_lower = query_str.lower().strip()
+    for loc_key, coords in KNOWN_LOCATIONS.items():
+        if loc_key in q_lower:
+            return coords
+    try:
+        url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(query_str + ', Maharashtra, India')}&limit=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'NEARZO-LocalApp/1.0'})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if data and len(data) > 0:
+                return (float(data[0]['lat']), float(data[0]['lon']))
+    except Exception:
+        pass
+    return (19.0760, 72.8777)
+
 def get_auth_state(headers):
     cookie_str = headers.get('Cookie', '')
     cookies = SimpleCookie(cookie_str)
@@ -725,12 +780,29 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
         if path == 'providers' or (path.startswith('providers') and not path.startswith('providers/detail')):
             is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, *rest = auth_state
             query_params = urllib.parse.parse_qs(url_parts.query)
-            c_lat = float(query_params.get('lat', [user_lat])[0]) if query_params.get('lat') else user_lat
-            c_lng = float(query_params.get('lng', [user_lng])[0]) if query_params.get('lng') else user_lng
+            c_loc = query_params.get('location', [''])[0].strip()
+            
+            c_lat = None
+            c_lng = None
+            if query_params.get('lat') and query_params.get('lng'):
+                try:
+                    c_lat = float(query_params['lat'][0])
+                    c_lng = float(query_params['lng'][0])
+                except (ValueError, IndexError):
+                    pass
+
+            if c_loc:
+                if c_lat is None or c_lng is None or (c_loc.lower() not in user_address.lower()):
+                    c_lat, c_lng = geocode_address(c_loc)
+            
+            if c_lat is None or c_lng is None:
+                c_lat = user_lat
+                c_lng = user_lng
+
+            display_loc = c_loc if c_loc else (user_address.split(',')[0] if user_address else 'Mumbai')
             c_rad = min(25.0, float(query_params.get('radius', [25.0])[0]))
             c_prof = query_params.get('profession', ['all'])[0]
             c_sort = query_params.get('sort', ['distance'])[0]
-            c_loc = query_params.get('location', ['Mumbai'])[0]
 
             ctx = {
                 'activePage': 'providers',
@@ -740,7 +812,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 'radiusKm': c_rad,
                 'selectedProfession': c_prof,
                 'sort': c_sort,
-                'location': c_loc
+                'location': display_loc
             }
             html = render_php_view('providers/index.php', ctx, auth_state)
             self.send_response(200)
@@ -831,8 +903,20 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             city = params.get('city', ['Mumbai'])[0].strip()
             full_addr = f"{address}, {city}" if address else (city if city else "Mumbai, India")
             email = params.get('email', [''])[0].strip()
-            lat = params.get('latitude', ['19.07600000'])[0].strip()
-            lng = params.get('longitude', ['72.87770000'])[0].strip()
+            lat_str = params.get('latitude', ['19.07600000'])[0].strip()
+            lng_str = params.get('longitude', ['72.87770000'])[0].strip()
+
+            try:
+                lat_val = float(lat_str)
+                lng_val = float(lng_str)
+            except ValueError:
+                lat_val, lng_val = 19.0760, 72.8777
+
+            # If user submitted manual address without picking a pin, resolve real coordinates
+            if (abs(lat_val - 19.0760) < 0.001 and abs(lng_val - 72.8777) < 0.001) and full_addr:
+                r_lat, r_lng = geocode_address(full_addr)
+                if abs(r_lat - 19.0760) > 0.001 or abs(r_lng - 72.8777) > 0.001:
+                    lat_val, lng_val = r_lat, r_lng
 
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
             self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
@@ -840,8 +924,8 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(full_addr)}; Path=/')
             self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
-            self.send_header('Set-Cookie', f'auth_lat={urllib.parse.quote(lat)}; Path=/')
-            self.send_header('Set-Cookie', f'auth_lng={urllib.parse.quote(lng)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_lat={lat_val:.8f}; Path=/')
+            self.send_header('Set-Cookie', f'auth_lng={lng_val:.8f}; Path=/')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Location', '/customer/dashboard')
 
@@ -849,14 +933,32 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             full_name = params.get('full_name', ['Provider'])[0].strip()
             first_name = full_name.split()[0] if full_name else 'Provider'
             biz_name = params.get('business_name', [f"{full_name}'s Services"])[0].strip()
+            address = params.get('address', [''])[0].strip()
             city = params.get('city', ['Mumbai'])[0].strip()
+            full_addr = f"{address}, {city}" if (address and address != city) else (address if address else city)
+            lat_str = params.get('latitude', ['19.07600000'])[0].strip()
+            lng_str = params.get('longitude', ['72.87770000'])[0].strip()
+
+            try:
+                lat_val = float(lat_str)
+                lng_val = float(lng_str)
+            except ValueError:
+                lat_val, lng_val = 19.0760, 72.8777
+
+            # If provider submitted manual address without picking a pin, resolve real coordinates
+            if (abs(lat_val - 19.0760) < 0.001 and abs(lng_val - 72.8777) < 0.001) and full_addr:
+                r_lat, r_lng = geocode_address(full_addr)
+                if abs(r_lat - 19.0760) > 0.001 or abs(r_lng - 72.8777) > 0.001:
+                    lat_val, lng_val = r_lat, r_lng
 
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
             self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
             self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(first_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(biz_name)}; Path=/')
-            self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(city)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(full_addr)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_lat={lat_val:.8f}; Path=/')
+            self.send_header('Set-Cookie', f'auth_lng={lng_val:.8f}; Path=/')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')

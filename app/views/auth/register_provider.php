@@ -89,7 +89,12 @@
             Tap the button above or tap directly on the map below. NEARZO automatically fills your address and connects you with nearby customers within <strong>25 km</strong>.
           </p>
 
-          <input type="text" id="providerAddressInput" name="address" class="form-control" required placeholder="Enter shop or workshop address in Mumbai" value="" style="margin-bottom: 12px;">
+          <div style="position: relative; margin-bottom: 12px;">
+            <input type="text" id="providerAddressInput" name="address" class="form-control" required placeholder="Enter shop or workshop address (e.g. Linking Road, Bandra West)" value="" style="padding-right: 105px;" oninput="handleManualProviderAddressInput()" onblur="forwardGeocodeProviderAddress()">
+            <button type="button" class="btn btn-sage btn-sm" style="position: absolute; right: 6px; top: 6px; padding: 6px 14px; font-size: 0.8rem; font-weight: 700;" onclick="forwardGeocodeProviderAddress()">
+              🔍 Locate
+            </button>
+          </div>
 
           <!-- Embedded Interactive Location Map -->
           <div style="position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-light); margin-bottom: 12px; box-shadow: 0 4px 14px rgba(35,76,61,0.08);">
@@ -310,6 +315,73 @@ function reverseGeocodeProviderLocation(lat, lng) {
     .catch(() => {
       if (statusElem) statusElem.textContent = `📍 Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     });
+}
+
+// Forward Geocoding: Automatically fetch real map location when provider manually types address
+let manualProvGeocodeTimer = null;
+function handleManualProviderAddressInput() {
+  clearTimeout(manualProvGeocodeTimer);
+  manualProvGeocodeTimer = setTimeout(() => {
+    forwardGeocodeProviderAddress();
+  }, 650);
+}
+
+async function forwardGeocodeProviderAddress() {
+  const street = (document.getElementById('providerAddressInput')?.value || '').trim();
+  const city = (document.getElementById('providerCity')?.value || 'Mumbai').trim();
+
+  if (street.length < 3) return;
+
+  const statusElem = document.getElementById('providerLocationStatus');
+  if (statusElem) {
+    statusElem.innerHTML = `⏳ Locating on real map: <strong>${street}</strong>...`;
+    statusElem.style.color = 'var(--terracotta)';
+  }
+
+  const query = `${street}, ${city}, Maharashtra, India`;
+
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+    if (resp.ok) {
+      const results = await resp.json();
+      if (results && results.length > 0) {
+        const item = results[0];
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon);
+
+        updateProviderLocationUI(lat, lng, false);
+        if (regProvMap) {
+          regProvMap.flyTo([lat, lng], 14, { duration: 1.2 });
+        }
+        if (statusElem) {
+          statusElem.innerHTML = `📍 Real Workshop Locked: <strong>Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}</strong>`;
+          statusElem.style.color = 'var(--forest-green)';
+        }
+        const shortName = item.display_name.split(',').slice(0, 2).join(',');
+        const app = window.Nearzo || window.AuraCraft;
+        if (app && app.showToast) app.showToast(`Real workshop location pinned: ${shortName}`, 'success');
+        return;
+      }
+    }
+
+    // Fallback: try querying city/street directly
+    const fallbackResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(street + ', Mumbai')}&limit=1`);
+    if (fallbackResp.ok) {
+      const r2 = await fallbackResp.json();
+      if (r2 && r2.length > 0) {
+        const lat = parseFloat(r2[0].lat);
+        const lng = parseFloat(r2[0].lon);
+        updateProviderLocationUI(lat, lng, false);
+        if (regProvMap) regProvMap.flyTo([lat, lng], 14, { duration: 1.2 });
+        if (statusElem) {
+          statusElem.innerHTML = `📍 Real Workshop Locked: <strong>Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}</strong>`;
+          statusElem.style.color = 'var(--forest-green)';
+        }
+      }
+    }
+  } catch(e) {
+    console.warn('Forward geocode notice:', e);
+  }
 }
 
 function detectProviderLocation() {

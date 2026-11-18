@@ -176,7 +176,7 @@
                 📍 Auto-Detect Live GPS
               </button>
             </div>
-            <input type="text" id="editAddress" class="form-control" value="Shop 12, Hill Road, Bandra West, Mumbai">
+            <input type="text" id="editAddress" class="form-control" value="<?= htmlspecialchars($provider['city'] ?? 'Shop 12, Hill Road, Bandra West, Mumbai') ?>" oninput="handleManualBaseAddress(this.value)" onblur="lookupAddressCoords(this.value)">
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
               <input type="text" id="editLat" class="form-control" value="19.060000" style="font-size: 0.8rem; padding: 6px 10px;" title="Latitude">
@@ -384,6 +384,29 @@ function updateProviderStatus(val) {
     indicator.style.boxShadow = 'none';
     if (app && app.showToast) app.showToast('You are now OFFLINE. Profile hidden from live map search.', 'info');
   }
+}
+
+let editAddrTimer = null;
+function handleManualBaseAddress(val) {
+  clearTimeout(editAddrTimer);
+  editAddrTimer = setTimeout(() => {
+    lookupAddressCoords(val);
+  }, 650);
+}
+
+function lookupAddressCoords(val) {
+  if (!val || val.length < 3) return;
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val + ', Mumbai')}&limit=1`)
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.length > 0) {
+        document.getElementById('editLat').value = parseFloat(data[0].lat).toFixed(6);
+        document.getElementById('editLng').value = parseFloat(data[0].lon).toFixed(6);
+        const app = window.Nearzo || window.AuraCraft;
+        if (app && app.showToast) app.showToast(`Coordinates fetched for: ${val}`, 'info');
+      }
+    })
+    .catch(() => {});
 }
 
 function updateCurrentGPS() {
