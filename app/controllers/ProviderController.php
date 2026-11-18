@@ -16,42 +16,27 @@ class ProviderController extends Controller {
         $providerModel = $this->model('Provider');
         $providerProfile = $providerModel->getByUserId((int)$user['id']);
 
-        $providerId = $providerProfile ? (int)$providerProfile['id'] : 1;
-
-        $provider = [
-            'id'             => $providerId,
-            'name'           => $user['full_name'],
-            'business'       => $providerProfile['business_name'] ?? 'Sterling Master Plumbing & Heating',
-            'is_available'   => (int)($providerProfile['is_available'] ?? 1),
-            'rating'         => (float)($providerProfile['rating_avg'] ?? 4.95),
-            'reviews_count'  => (int)($providerProfile['reviews_count'] ?? 48),
-            'month_earnings' => 2840.00,
-            'pending_payout' => 475.00,
-            'completed_jobs' => 48
-        ];
+        $providerId = $providerProfile ? (int)$providerProfile['id'] : (int)($user['id'] ?? 1);
+        $isDemoAccount = (isset($user['email']) && strtolower($user['email']) === 'david@sterlingcraft.com');
 
         /** @var Booking $bookingModel */
         $bookingModel = $this->model('Booking');
-        $dbBookings   = $bookingModel->getByProviderId($providerId);
+        $dbBookings   = $providerProfile ? $bookingModel->getByProviderId($providerId) : [];
+
+        $completedJobsCount = 0;
+        $monthEarnings = 0.0;
+        $pendingPayout = 0.0;
 
         $pendingRequests = [];
         $upcomingJobs    = [];
 
         if (!empty($dbBookings)) {
             foreach ($dbBookings as $b) {
-                if ($b['status'] === 'pending') {
-                    $pendingRequests[] = [
-                        'id'       => (int)$b['id'],
-                        'code'     => $b['booking_code'],
-                        'customer' => $b['customer_name'],
-                        'phone'    => $b['customer_phone'],
-                        'address'  => $b['service_address'],
-                        'service'  => $b['service_name'],
-                        'date'     => date('M d, h:i A', strtotime($b['booking_date'] . ' ' . $b['booking_time'])),
-                        'amount'   => (float)$b['total_amount'],
-                        'notes'    => $b['customer_notes']
-                    ];
+                if ($b['status'] === 'completed') {
+                    $completedJobsCount++;
+                    $monthEarnings += (float)$b['total_amount'];
                 } elseif (in_array($b['status'], ['accepted', 'in_progress'])) {
+                    $pendingPayout += (float)$b['total_amount'];
                     $upcomingJobs[] = [
                         'id'       => (int)$b['id'],
                         'code'     => $b['booking_code'],
@@ -63,12 +48,42 @@ class ProviderController extends Controller {
                         'amount'   => (float)$b['total_amount'],
                         'status'   => $b['status']
                     ];
+                } elseif ($b['status'] === 'pending') {
+                    $pendingRequests[] = [
+                        'id'       => (int)$b['id'],
+                        'code'     => $b['booking_code'],
+                        'customer' => $b['customer_name'],
+                        'phone'    => $b['customer_phone'],
+                        'address'  => $b['service_address'],
+                        'service'  => $b['service_name'],
+                        'date'     => date('M d, h:i A', strtotime($b['booking_date'] . ' ' . $b['booking_time'])),
+                        'amount'   => (float)$b['total_amount'],
+                        'notes'    => $b['customer_notes']
+                    ];
                 }
             }
+        } elseif ($isDemoAccount) {
+            // Demo metrics only for David Sterling demo account
+            $monthEarnings = 2840.00;
+            $pendingPayout = 475.00;
+            $completedJobsCount = 48;
         }
 
-        // Demo fallback if tables not yet populated
-        if (empty($pendingRequests) && empty($upcomingJobs)) {
+        $provider = [
+            'id'             => $providerId,
+            'name'           => $user['full_name'],
+            'business'       => $providerProfile['business_name'] ?? ($isDemoAccount ? 'Sterling Master Plumbing & Heating' : ($user['full_name'] . ' Services')),
+            'is_available'   => (int)($providerProfile['is_available'] ?? 1),
+            'rating'         => (float)($providerProfile['rating_avg'] ?? ($isDemoAccount ? 4.95 : 0.0)),
+            'reviews_count'  => (int)($providerProfile['reviews_count'] ?? ($isDemoAccount ? 48 : 0)),
+            'month_earnings' => $monthEarnings,
+            'pending_payout' => $pendingPayout,
+            'completed_jobs' => $completedJobsCount,
+            'city'           => $providerProfile['city'] ?? 'Mumbai'
+        ];
+
+        // Demo fallback ONLY for David Sterling preset demo account
+        if ($isDemoAccount && empty($pendingRequests) && empty($upcomingJobs)) {
             $pendingRequests = [
                 [
                     'id'       => 101,

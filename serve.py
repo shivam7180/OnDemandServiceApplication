@@ -202,16 +202,17 @@ def get_auth_state(headers):
     user_fullname = urllib.parse.unquote(cookies['auth_fullname'].value) if 'auth_fullname' in cookies else (user_name if user_name else 'Valued Client')
     user_lat = float(cookies['auth_lat'].value) if 'auth_lat' in cookies else 19.0760
     user_lng = float(cookies['auth_lng'].value) if 'auth_lng' in cookies else 72.8777
+    user_biz = urllib.parse.unquote(cookies['auth_biz'].value) if 'auth_biz' in cookies else ''
     
-    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng
+    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, user_biz
 
 def render_php_view(view_relative_path, context=None, auth_state=None):
     if context is None:
         context = {}
     if auth_state is None:
-        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client', 19.0760, 72.8777)
+        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client', 19.0760, 72.8777, '')
     
-    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng = auth_state
+    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, user_biz = auth_state
     
     file_path = os.path.join(BASE_DIR, 'app', 'views', view_relative_path)
     if not os.path.exists(file_path):
@@ -266,18 +267,119 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     content = content.replace("<?= $booking['provider']['eta'] ?>", "12 mins")
     content = content.replace("<?= $progressWidth ?>", "75%")
     content = content.replace("<?= $provider['avatar'] ?>", "👨‍🔧")
-    content = content.replace("<?= htmlspecialchars($provider['name']) ?>", "David Sterling")
-    content = content.replace("<?= htmlspecialchars($provider['business_name'] ?? 'Sterling Master Plumbing & Pipeworks') ?>", "Sterling Master Plumbing & Pipeworks")
-    content = content.replace("<?= htmlspecialchars($provider['business'] ?? 'Sterling Master Plumbing & Pipeworks') ?>", "Sterling Master Plumbing & Pipeworks")
-    content = content.replace("<?= htmlspecialchars($provider['city'] ?? 'Mumbai') ?>", "Mumbai")
-    content = content.replace("<?= $provider['service_radius_km'] ?? 15 ?>", "15")
-    content = content.replace("<?= number_format($provider['rating_avg'] ?? 4.95, 2) ?>", "4.95")
-    content = content.replace("<?= $provider['reviews_count'] ?? 48 ?>", "48")
-    content = content.replace("<?= $provider['experience_years'] ?? 12 ?>", "12")
-    content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 0) ?>", "599")
-    content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 2) ?>", "599.00")
-    content = content.replace("<?= (float)($provider['hourly_rate'] ?? 599) ?>", "599.00")
-    content = content.replace("<?= nl2br(htmlspecialchars($provider['bio'] ?? '')) ?>", "Licensed master craftsman with over 12 years of residential plumbing, leak detection, and sanitary renovation expertise across Mumbai.")
+
+    # Provider identity and metrics
+    is_demo_provider = (user_name.lower() == 'david') or (not is_authenticated and view_relative_path == 'provider/dashboard.php')
+    is_new_provider = (user_role == 'provider') and not is_demo_provider
+
+    provider_name = user_fullname if is_new_provider else 'David Sterling'
+    provider_biz = (user_biz if user_biz else f"{user_fullname}'s Services") if is_new_provider else 'Sterling Master Plumbing & Heating'
+    provider_city = user_address if (is_new_provider and user_address) else 'Mumbai'
+
+    content = content.replace("<?= htmlspecialchars($provider['name']) ?>", provider_name)
+    content = content.replace("<?= htmlspecialchars($provider['business_name'] ?? 'Sterling Master Plumbing & Pipeworks') ?>", provider_biz)
+    content = content.replace("<?= htmlspecialchars($provider['business'] ?? 'Sterling Master Plumbing & Pipeworks') ?>", provider_biz)
+    content = content.replace("<?= htmlspecialchars($provider['business']) ?>", provider_biz)
+    content = content.replace("<?= htmlspecialchars($provider['city'] ?? 'Mumbai') ?>", provider_city)
+    content = content.replace("<?= $provider['service_radius_km'] ?? 15 ?>", "25")
+    content = content.replace("<?= $provider['service_radius_km'] ?? 25 ?>", "25")
+
+    if is_new_provider:
+        content = content.replace("<?= (int)($provider['month_earnings'] ?? 0) ?>", "0")
+        content = content.replace("<?= (int)($provider['pending_payout'] ?? 0) ?>", "0")
+        content = content.replace("<?= (int)($provider['completed_jobs'] ?? 0) ?>", "0")
+        content = content.replace("<?= (float)($provider['rating'] ?? 5.0) ?>", "0")
+        content = content.replace("<?= ($provider['month_earnings'] ?? 0) > 0 ? '↑ Active cycle' : 'No earnings yet this month' ?>", "No earnings yet this month")
+        content = content.replace("<?= ($provider['pending_payout'] ?? 0) > 0 ? 'Direct UPI / NEFT payout: Monday' : '₹0.00 escrow balance' ?>", "₹0.00 escrow balance")
+        content = content.replace("<?= ($provider['completed_jobs'] ?? 0) > 0 ? '100% on-time arrival in 25 km' : '0 jobs completed so far' ?>", "0 jobs completed so far")
+        content = content.replace("<?= ($provider['reviews_count'] ?? 0) > 0 ? '★ ' . $provider['rating'] . ' (' . $provider['reviews_count'] . ' reviews)' : '★ New Specialist (0 jobs completed)' ?>", "★ New Specialist (0 jobs completed)")
+        content = content.replace("<?= $provider['reviews_count'] ?? 48 ?>", "0")
+        content = content.replace("<?= number_format($provider['rating_avg'] ?? 4.95, 2) ?>", "0.00")
+        content = content.replace("<?= $provider['experience_years'] ?? 12 ?>", "1")
+        content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 0) ?>", "499")
+        content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 2) ?>", "499.00")
+        content = content.replace("<?= (float)($provider['hourly_rate'] ?? 599) ?>", "499.00")
+        content = content.replace("<?= nl2br(htmlspecialchars($provider['bio'] ?? '')) ?>", f"Certified local service specialist providing on-demand repair services across {provider_city}.")
+
+        # Rating card block: pick else branch (New Partner)
+        content = re.sub(
+            r'<\?php\s+if\s*\(\(\$provider\[\'completed_jobs\'\]\s*\?\?\s*0\)\s*>\s*0\):\s*\?>.*?<\?php\s+else:\s*\?>\s*(.*?)\s*<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+        # Incoming requests: pick empty radar state
+        content = re.sub(
+            r'<\?php\s+if\s*\(empty\(\$pendingRequests\)\):\s*\?>\s*(.*?)\s*<\?php\s+else:\s*\?>.*?<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+        # Upcoming jobs: pick empty scheduled appointments state
+        content = re.sub(
+            r'<\?php\s+if\s*\(empty\(\$upcomingJobs\)\):\s*\?>\s*(.*?)\s*<\?php\s+else:\s*\?>.*?<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+    else:
+        content = content.replace("<?= (int)($provider['month_earnings'] ?? 0) ?>", "48500")
+        content = content.replace("<?= (int)($provider['pending_payout'] ?? 0) ?>", "4850")
+        content = content.replace("<?= (int)($provider['completed_jobs'] ?? 0) ?>", "48")
+        content = content.replace("<?= (float)($provider['rating'] ?? 5.0) ?>", "4.95")
+        content = content.replace("<?= ($provider['month_earnings'] ?? 0) > 0 ? '↑ Active cycle' : 'No earnings yet this month' ?>", "↑ 18% from last month")
+        content = content.replace("<?= ($provider['pending_payout'] ?? 0) > 0 ? 'Direct UPI / NEFT payout: Monday' : '₹0.00 escrow balance' ?>", "Direct UPI / NEFT payout: Monday")
+        content = content.replace("<?= ($provider['completed_jobs'] ?? 0) > 0 ? '100% on-time arrival in 25 km' : '0 jobs completed so far' ?>", "100% on-time arrival in 25 km")
+        content = content.replace("<?= ($provider['reviews_count'] ?? 0) > 0 ? '★ ' . $provider['rating'] . ' (' . $provider['reviews_count'] . ' reviews)' : '★ New Specialist (0 jobs completed)' ?>", "★ 4.95 (48 reviews)")
+        content = content.replace("<?= $provider['reviews_count'] ?? 48 ?>", "48")
+        content = content.replace("<?= number_format($provider['rating_avg'] ?? 4.95, 2) ?>", "4.95")
+        content = content.replace("<?= $provider['experience_years'] ?? 12 ?>", "12")
+        content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 0) ?>", "599")
+        content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 2) ?>", "599.00")
+        content = content.replace("<?= (float)($provider['hourly_rate'] ?? 599) ?>", "599.00")
+        content = content.replace("<?= nl2br(htmlspecialchars($provider['bio'] ?? '')) ?>", "Licensed master craftsman with over 12 years of residential plumbing, leak detection, and sanitary renovation expertise across Mumbai.")
+
+        # Rating card block: pick if branch (4.95 Top Verified Craftsman)
+        content = re.sub(
+            r'<\?php\s+if\s*\(\(\$provider\[\'completed_jobs\'\]\s*\?\?\s*0\)\s*>\s*0\):\s*\?>\s*(.*?)\s*<\?php\s+else:\s*\?>.*?<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+        # Incoming requests: pick else branch (Marcus Vance)
+        content = re.sub(
+            r'<\?php\s+if\s*\(empty\(\$pendingRequests\)\):\s*\?>.*?<\?php\s+else:\s*\?>\s*(.*?)\s*<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+        # Upcoming jobs: pick else branch (Sophia Miller)
+        content = re.sub(
+            r'<\?php\s+if\s*\(empty\(\$upcomingJobs\)\):\s*\?>.*?<\?php\s+else:\s*\?>\s*(.*?)\s*<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+        content = content.replace("<?= $req['id'] ?>", "101")
+        content = content.replace("<?= $req['code'] ?>", "BK-89022")
+        content = content.replace("<?= htmlspecialchars($req['service']) ?>", "Emergency Pipe Leak & Valve Repair")
+        content = content.replace("<?= htmlspecialchars($req['customer']) ?>", "Marcus Vance")
+        content = content.replace("<?= $req['phone'] ?>", "+91 98200 45678")
+        content = content.replace("<?= htmlspecialchars($req['address']) ?>", "Shop 12, Hill Road, Bandra West, Mumbai")
+        content = content.replace("<?= htmlspecialchars($req['notes']) ?>", "Slow drip under kitchen sink. Main valve is under counter.")
+        content = content.replace("<?= number_format($req['amount'], 0) ?>", "499")
+
+        content = content.replace("<?= $job['code'] ?>", "BK-89021")
+        content = content.replace("<?= htmlspecialchars($job['customer']) ?>", "Sophia Miller")
+        content = content.replace("<?= htmlspecialchars($job['service']) ?>", "Luxury Faucet & Fixture Installation")
+        content = content.replace("<?= $job['date'] ?>", "Nov 20, 2026 - 10:00 AM")
+        content = content.replace("<?= htmlspecialchars($job['address']) ?>", "Flat 402, Green Acres, Bandra West, Mumbai")
+        content = content.replace("<?= number_format($job['amount'], 0) ?>", "899")
     # Customer Dashboard dynamic values
     display_user_name = user_name if user_name else 'Valued Client'
     display_address = user_address if user_address else 'Mumbai, Maharashtra'
@@ -583,6 +685,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', 'auth_role=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_name=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_fullname=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'auth_biz=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_address=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_email=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_lat=; Path=/; Max-Age=0')
@@ -619,7 +722,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == 'providers' or (path.startswith('providers') and not path.startswith('providers/detail')):
-            is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng = auth_state
+            is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng, *rest = auth_state
             query_params = urllib.parse.parse_qs(url_parts.query)
             c_lat = float(query_params.get('lat', [user_lat])[0]) if query_params.get('lat') else user_lat
             c_lng = float(query_params.get('lng', [user_lng])[0]) if query_params.get('lng') else user_lng
@@ -682,11 +785,26 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Set-Cookie', 'auth_fullname=System%20Admin; Path=/')
                 self.send_header('Set-Cookie', 'auth_address=HQ%20Control%20Room; Path=/')
                 self.send_header('Location', '/admin/dashboard')
-            elif role == 'provider' or 'provider' in email or 'sterling' in email or 'david' in email:
+            elif 'sterling' in email or 'david' in email:
                 self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=David; Path=/')
                 self.send_header('Set-Cookie', 'auth_fullname=David%20Sterling; Path=/')
+                self.send_header('Set-Cookie', 'auth_biz=Sterling%20Master%20Plumbing%20%26%20Heating; Path=/')
                 self.send_header('Set-Cookie', 'auth_address=Bandra%20West%2C%20Mumbai; Path=/')
+                self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
+                self.send_header('Location', '/provider/dashboard')
+            elif role == 'provider' or 'provider' in email:
+                current_cookies = SimpleCookie(self.headers.get('Cookie', ''))
+                saved_name = current_cookies.get('auth_name')
+                saved_full = current_cookies.get('auth_fullname')
+                saved_biz = current_cookies.get('auth_biz')
+                provider_first = urllib.parse.unquote(saved_name.value) if (saved_name and saved_name.value and saved_name.value != 'David') else (email.split('@')[0].capitalize() if email else 'Provider')
+                provider_full = urllib.parse.unquote(saved_full.value) if (saved_full and saved_full.value and 'Sterling' not in saved_full.value) else provider_first
+                provider_biz_val = urllib.parse.unquote(saved_biz.value) if (saved_biz and saved_biz.value) else f"{provider_full}'s Services"
+                self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
+                self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(provider_first)}; Path=/')
+                self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(provider_full)}; Path=/')
+                self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(provider_biz_val)}; Path=/')
                 self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
                 self.send_header('Location', '/provider/dashboard')
             elif 'sophia' in email:
@@ -728,7 +846,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
         elif 'registerProviderSubmit' in self.path:
             full_name = params.get('full_name', ['Provider'])[0].strip()
             first_name = full_name.split()[0] if full_name else 'Provider'
-            biz_name = params.get('business_name', [full_name])[0].strip()
+            biz_name = params.get('business_name', [f"{full_name}'s Services"])[0].strip()
             city = params.get('city', ['Mumbai'])[0].strip()
 
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
@@ -737,6 +855,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(biz_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(city)}; Path=/')
+            self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
             self.send_header('Location', '/provider/dashboard')
 

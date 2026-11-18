@@ -8,7 +8,7 @@
         <span class="badge badge-terracotta" style="margin-bottom: 8px;">Partner Console</span>
         <h1 style="font-size: 2rem; margin: 0;"><?= htmlspecialchars($provider['business']) ?></h1>
         <div style="font-size: 0.95rem; margin-top: 4px; color: var(--charcoal-muted);">
-          Master Specialist: <strong><?= htmlspecialchars($provider['name']) ?></strong> • ★ <?= $provider['rating'] ?> (<?= $provider['reviews_count'] ?> reviews) • 📍 <?= htmlspecialchars($provider['city'] ?? 'Mumbai') ?>
+          Master Specialist: <strong><?= htmlspecialchars($provider['name']) ?></strong> • <?= ($provider['reviews_count'] ?? 0) > 0 ? '★ ' . $provider['rating'] . ' (' . $provider['reviews_count'] . ' reviews)' : '★ New Specialist (0 jobs completed)' ?> • 📍 <?= htmlspecialchars($provider['city'] ?? 'Mumbai') ?>
         </div>
       </div>
 
@@ -20,7 +20,7 @@
           <option value="busy">⏳ Busy (On Active Call)</option>
           <option value="offline">⚪ Offline (Taking Rest)</option>
         </select>
-        <button type="button" class="btn btn-sage btn-sm" style="padding: 6px 12px; font-size: 0.8rem;" onclick="AuraCraft.openModal('initialAvailabilityModal')">
+        <button type="button" class="btn btn-sage btn-sm" style="padding: 6px 12px; font-size: 0.8rem;" onclick="Nearzo.openModal('initialAvailabilityModal')">
           Change Status
         </button>
       </div>
@@ -36,26 +36,37 @@
     <div class="grid-4" style="margin-bottom: 36px;">
       <div class="card reveal-on-scroll">
         <div style="font-size: 0.82rem; color: var(--charcoal-muted); text-transform: uppercase; font-weight: 600;">Earnings This Month</div>
-        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="48500" data-prefix="₹">0</div>
-        <div style="font-size: 0.8rem; color: var(--status-success); margin-top: 4px;">↑ 18% from last month</div>
+        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="<?= (int)($provider['month_earnings'] ?? 0) ?>" data-prefix="₹">0</div>
+        <div style="font-size: 0.8rem; color: <?= ($provider['month_earnings'] ?? 0) > 0 ? 'var(--status-success)' : 'var(--charcoal-muted)' ?>; margin-top: 4px;">
+          <?= ($provider['month_earnings'] ?? 0) > 0 ? '↑ Active cycle' : 'No earnings yet this month' ?>
+        </div>
       </div>
 
       <div class="card reveal-on-scroll reveal-delay-1">
         <div style="font-size: 0.82rem; color: var(--charcoal-muted); text-transform: uppercase; font-weight: 600;">Pending Escrow Payout</div>
-        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="4850" data-prefix="₹">0</div>
-        <div style="font-size: 0.8rem; color: var(--charcoal-muted); margin-top: 4px;">Direct UPI / NEFT payout: Monday</div>
+        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="<?= (int)($provider['pending_payout'] ?? 0) ?>" data-prefix="₹">0</div>
+        <div style="font-size: 0.8rem; color: var(--charcoal-muted); margin-top: 4px;">
+          <?= ($provider['pending_payout'] ?? 0) > 0 ? 'Direct UPI / NEFT payout: Monday' : '₹0.00 escrow balance' ?>
+        </div>
       </div>
 
       <div class="card reveal-on-scroll reveal-delay-2">
         <div style="font-size: 0.82rem; color: var(--charcoal-muted); text-transform: uppercase; font-weight: 600;">Completed Jobs</div>
-        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="48">0</div>
-        <div style="font-size: 0.8rem; color: var(--forest-green); margin-top: 4px;">100% on-time arrival in 15 km</div>
+        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="<?= (int)($provider['completed_jobs'] ?? 0) ?>">0</div>
+        <div style="font-size: 0.8rem; color: var(--forest-green); margin-top: 4px;">
+          <?= ($provider['completed_jobs'] ?? 0) > 0 ? '100% on-time arrival in 25 km' : '0 jobs completed so far' ?>
+        </div>
       </div>
 
       <div class="card reveal-on-scroll reveal-delay-3">
         <div style="font-size: 0.82rem; color: var(--charcoal-muted); text-transform: uppercase; font-weight: 600;">Marketplace Rating</div>
-        <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="4.95" data-decimals="2">0</div>
-        <div style="font-size: 0.8rem; color: #D97706; margin-top: 4px;">★ Top Verified Craftsman</div>
+        <?php if (($provider['completed_jobs'] ?? 0) > 0): ?>
+          <div class="counter-value" style="font-size: 2.2rem; margin-top: 6px;" data-counter="<?= (float)($provider['rating'] ?? 5.0) ?>" data-decimals="2">0</div>
+          <div style="font-size: 0.8rem; color: #D97706; margin-top: 4px;">★ Top Verified Craftsman</div>
+        <?php else: ?>
+          <div style="font-size: 1.8rem; font-weight: 800; margin-top: 6px; color: var(--forest-green);">New Partner</div>
+          <div style="font-size: 0.8rem; color: var(--charcoal-muted); margin-top: 4px;">Awaiting first verified job rating</div>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -71,8 +82,9 @@
 
         <?php if (empty($pendingRequests)): ?>
           <div class="card" style="text-align: center; padding: 40px;">
-            <div style="font-size: 2rem; margin-bottom: 8px;">📡</div>
-            <p style="color: var(--charcoal-muted); margin: 0;">Radar active. Waiting for new customer requests within your 15 km radius...</p>
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">📡</div>
+            <h4 style="margin-bottom: 6px; color: var(--forest-green);">Radar Active</h4>
+            <p style="color: var(--charcoal-muted); margin: 0;">Waiting for new customer requests within your 25 km radius...</p>
           </div>
         <?php else: ?>
           <div style="display: flex; flex-direction: column; gap: 18px;">
@@ -184,38 +196,46 @@
     <div class="card reveal-on-scroll">
       <h3 style="margin-bottom: 20px;">Confirmed Upcoming Appointments</h3>
 
-      <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 2px solid var(--border-light); font-size: 0.85rem; color: var(--charcoal-muted); text-transform: uppercase;">
-              <th style="padding: 12px 16px;">Booking Code</th>
-              <th style="padding: 12px 16px;">Client Name</th>
-              <th style="padding: 12px 16px;">Service</th>
-              <th style="padding: 12px 16px;">Appointment Time</th>
-              <th style="padding: 12px 16px;">Service Address</th>
-              <th style="padding: 12px 16px;">Payout</th>
-              <th style="padding: 12px 16px; text-align: right;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($upcomingJobs as $job): ?>
-              <tr style="border-bottom: 1px solid var(--border-light); font-size: 0.92rem;">
-                <td style="padding: 16px; font-weight: 700; color: var(--forest-green);"><?= $job['code'] ?></td>
-                <td style="padding: 16px; font-weight: 600;"><?= htmlspecialchars($job['customer']) ?></td>
-                <td style="padding: 16px;"><?= htmlspecialchars($job['service']) ?></td>
-                <td style="padding: 16px; font-weight: 600;"><?= $job['date'] ?></td>
-                <td style="padding: 16px; color: var(--charcoal-light);"><?= htmlspecialchars($job['address']) ?></td>
-                <td style="padding: 16px; font-weight: 700;">₹<?= number_format($job['amount'], 0) ?></td>
-                <td style="padding: 16px; text-align: right;">
-                  <a href="<?= BASE_URL ?>/booking/track" class="btn btn-outline btn-sm">
-                    Open Job Tracker
-                  </a>
-                </td>
+      <?php if (empty($upcomingJobs)): ?>
+        <div style="text-align: center; padding: 40px; color: var(--charcoal-muted);">
+          <div style="font-size: 2.5rem; margin-bottom: 8px;">📅</div>
+          <h4 style="margin-bottom: 6px; color: var(--charcoal);">No Upcoming Appointments Scheduled</h4>
+          <p style="margin: 0; font-size: 0.9rem;">When you accept incoming customer requests, confirmed bookings will appear in this dispatch schedule.</p>
+        </div>
+      <?php else: ?>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--border-light); font-size: 0.85rem; color: var(--charcoal-muted); text-transform: uppercase;">
+                <th style="padding: 12px 16px;">Booking Code</th>
+                <th style="padding: 12px 16px;">Client Name</th>
+                <th style="padding: 12px 16px;">Service</th>
+                <th style="padding: 12px 16px;">Appointment Time</th>
+                <th style="padding: 12px 16px;">Service Address</th>
+                <th style="padding: 12px 16px;">Payout</th>
+                <th style="padding: 12px 16px; text-align: right;">Action</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              <?php foreach ($upcomingJobs as $job): ?>
+                <tr style="border-bottom: 1px solid var(--border-light); font-size: 0.92rem;">
+                  <td style="padding: 16px; font-weight: 700; color: var(--forest-green);"><?= $job['code'] ?></td>
+                  <td style="padding: 16px; font-weight: 600;"><?= htmlspecialchars($job['customer']) ?></td>
+                  <td style="padding: 16px;"><?= htmlspecialchars($job['service']) ?></td>
+                  <td style="padding: 16px; font-weight: 600;"><?= $job['date'] ?></td>
+                  <td style="padding: 16px; color: var(--charcoal-light);"><?= htmlspecialchars($job['address']) ?></td>
+                  <td style="padding: 16px; font-weight: 700;">₹<?= number_format($job['amount'], 0) ?></td>
+                  <td style="padding: 16px; text-align: right;">
+                    <a href="<?= BASE_URL ?>/booking/track" class="btn btn-outline btn-sm">
+                      Open Job Tracker
+                    </a>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
     </div>
 
   </div>
@@ -230,7 +250,7 @@
     <span class="badge badge-terracotta" style="margin-bottom: 8px;">Partner Shift Check-In</span>
     <h2 style="font-size: 1.75rem; margin-bottom: 8px; color: var(--forest-green);">Mark Your Availability Status</h2>
     <p style="font-size: 0.92rem; color: var(--charcoal-muted); margin-bottom: 24px; line-height: 1.5;">
-      Welcome to your partner console! Choose your current shift status so local customers within a 15 km radius know when you are available for booking.
+      Welcome to your partner console! Choose your current shift status so local customers within a 25 km radius know when you are available for booking.
     </p>
 
     <!-- 3 Choice Cards -->
@@ -242,7 +262,7 @@
           <div style="width: 14px; height: 14px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 10px #4ADE80;"></div>
           <div>
             <strong style="color: var(--forest-green); font-size: 1.02rem; display: block;">● Available (Online & Accepting Jobs)</strong>
-            <span style="font-size: 0.82rem; color: var(--charcoal-muted);">Live on the 15 km search radar. Receive instant customer calls & bookings.</span>
+            <span style="font-size: 0.82rem; color: var(--charcoal-muted);">Live on the 25 km search radar. Receive instant customer calls & bookings.</span>
           </div>
         </div>
         <span id="checkAvailable" style="font-size: 1.3rem; color: var(--forest-green); font-weight: 800;">✓</span>
@@ -331,8 +351,9 @@ function confirmInitialStatus() {
   document.cookie = "prompt_avail=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   document.cookie = "provider_avail=" + selectedStatus + "; path=/;";
 
-  AuraCraft.closeModal('initialAvailabilityModal');
-  AuraCraft.showToast(`Initial shift status locked: ${selectedStatus.toUpperCase()}`, 'success');
+  const app = window.Nearzo || window.AuraCraft;
+  if (app && app.closeModal) app.closeModal('initialAvailabilityModal');
+  if (app && app.showToast) app.showToast(`Initial shift status locked: ${selectedStatus.toUpperCase()}`, 'success');
 }
 
 // Auto-prompt initial availability status on login if not already acknowledged this session
@@ -342,42 +363,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (hasPromptCookie || !isSessionPrompted) {
     setTimeout(() => {
-      AuraCraft.openModal('initialAvailabilityModal');
+      const app = window.Nearzo || window.AuraCraft;
+      if (app && app.openModal) app.openModal('initialAvailabilityModal');
     }, 350);
   }
 });
 function updateProviderStatus(val) {
   const indicator = document.getElementById('availabilityIndicator');
+  const app = window.Nearzo || window.AuraCraft;
   if (val === 'available') {
     indicator.style.background = '#4ADE80';
     indicator.style.boxShadow = '0 0 8px #4ADE80';
-    AuraCraft.showToast('Availability status updated: You are now LIVE for jobs within 15 km.', 'success');
+    if (app && app.showToast) app.showToast('Availability status updated: You are now LIVE for jobs within 25 km.', 'success');
   } else if (val === 'busy') {
     indicator.style.background = '#F59E0B';
     indicator.style.boxShadow = '0 0 8px #F59E0B';
-    AuraCraft.showToast('Status set to BUSY. You will not be dispatched new immediate calls.', 'warning');
+    if (app && app.showToast) app.showToast('Status set to BUSY. You will not be dispatched new immediate calls.', 'warning');
   } else {
     indicator.style.background = '#9CA3AF';
     indicator.style.boxShadow = 'none';
-    AuraCraft.showToast('You are now OFFLINE. Profile hidden from live map search.', 'info');
+    if (app && app.showToast) app.showToast('You are now OFFLINE. Profile hidden from live map search.', 'info');
   }
 }
 
 function updateCurrentGPS() {
+  const app = window.Nearzo || window.AuraCraft;
   if (!navigator.geolocation) {
-    AuraCraft.showToast('Geolocation not supported by browser', 'warning');
+    if (app && app.showToast) app.showToast('Geolocation not supported by browser', 'warning');
     return;
   }
-  AuraCraft.showToast('Fetching current device coordinates...', 'info');
+  if (app && app.showToast) app.showToast('Fetching current device coordinates...', 'info');
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       document.getElementById('editLat').value = pos.coords.latitude.toFixed(6);
       document.getElementById('editLng').value = pos.coords.longitude.toFixed(6);
       document.getElementById('editAddress').value = `📍 GPS Location (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`;
-      AuraCraft.showToast('Base GPS location updated!', 'success');
+      if (app && app.showToast) app.showToast('Base GPS location updated!', 'success');
     },
     (err) => {
-      AuraCraft.showToast('Location permission denied or timed out.', 'warning');
+      if (app && app.showToast) app.showToast('Location permission denied or timed out.', 'warning');
     }
   );
 }
@@ -387,7 +411,8 @@ function handleProfileUpdate(e) {
   const prof = document.getElementById('editProfession').value;
   const rate = document.getElementById('editRate').value;
   const type = document.getElementById('editPriceType').value;
-  AuraCraft.showToast(`Marketplace profile saved: ${prof} at ₹${rate} (${type})!`, 'success');
+  const app = window.Nearzo || window.AuraCraft;
+  if (app && app.showToast) app.showToast(`Marketplace profile saved: ${prof} at ₹${rate} (${type})!`, 'success');
 }
 
 function acceptRequest(id, code) {
@@ -398,7 +423,8 @@ function acceptRequest(id, code) {
     card.style.transition = 'all 0.3s ease';
     setTimeout(() => card.remove(), 300);
   }
-  AuraCraft.showToast(`Job ${code} accepted! Route scheduled on live tracker.`, 'success');
+  const app = window.Nearzo || window.AuraCraft;
+  if (app && app.showToast) app.showToast(`Job ${code} accepted! Route scheduled on live tracker.`, 'success');
 }
 
 function rejectRequest(id) {
@@ -409,7 +435,8 @@ function rejectRequest(id) {
     card.style.transition = 'all 0.3s ease';
     setTimeout(() => card.remove(), 300);
   }
-  AuraCraft.showToast('Request declined. Job returned to platform pool.', 'info');
+  const app = window.Nearzo || window.AuraCraft;
+  if (app && app.showToast) app.showToast('Request declined. Job returned to platform pool.', 'info');
 }
 </script>
 
