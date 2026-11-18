@@ -2,7 +2,7 @@
 NEARZO Local Development Server
 Provides instant local preview on http://localhost:8000
 Supports two-sided marketplace (Customer & Service Provider),
-Haversine location-based search within 15 km, session cookies,
+Haversine location-based search strictly within 25 km, session cookies,
 Google Maps & Leaflet integration, and Indian Rupee (₹) pricing.
 """
 
@@ -10,11 +10,185 @@ import http.server
 import socketserver
 import os
 import re
+import math
+import json
 import urllib.parse
 from http.cookies import SimpleCookie
 
 PORT = 8000
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def calculate_haversine(lat1, lon1, lat2, lon2):
+    R = 6371.0 # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return round(R * c, 2)
+
+CATALOG_PROVIDERS = [
+    {
+        'id': 1,
+        'name': 'David Sterling',
+        'business_name': 'Sterling Master Plumbing & Pipeworks',
+        'profession': 'Plumber',
+        'bio': 'Licensed master plumber with 12 years of leak detection, sanitary fitting, and geyser installation experience.',
+        'hourly_rate': 599.00,
+        'price_type': 'per_hour',
+        'experience_years': 12,
+        'rating_avg': 4.95,
+        'reviews_count': 48,
+        'city': 'Bandra West, Mumbai',
+        'address': 'Shop 12, Hill Road, Bandra West',
+        'latitude': 19.0600,
+        'longitude': 72.8650,
+        'phone': '+91 98200 00201',
+        'show_phone': 1,
+        'avatar': '👨‍🔧',
+        'availability': 'available'
+    },
+    {
+        'id': 2,
+        'name': 'Elena Rostova',
+        'business_name': 'LuxeClean Botanical Housekeeping',
+        'profession': 'Cleaner',
+        'bio': 'Eco-certified residential sanitization and deep kitchen/sofa steam cleaning specialist.',
+        'hourly_rate': 799.00,
+        'price_type': 'per_visit',
+        'experience_years': 7,
+        'rating_avg': 4.98,
+        'reviews_count': 64,
+        'city': 'Khar West, Mumbai',
+        'address': '14th Road, Khar West',
+        'latitude': 19.0720,
+        'longitude': 72.8380,
+        'phone': '+91 98200 00202',
+        'show_phone': 1,
+        'avatar': '🧹',
+        'availability': 'available'
+    },
+    {
+        'id': 3,
+        'name': 'Julian Thorne',
+        'business_name': 'Thorne Smart Electric & Wiring',
+        'profession': 'Electrician',
+        'bio': 'Certified electrician for smart lighting, short-circuit diagnostics, EV chargers, and inverter setups.',
+        'hourly_rate': 499.00,
+        'price_type': 'per_visit',
+        'experience_years': 9,
+        'rating_avg': 4.89,
+        'reviews_count': 39,
+        'city': 'Santacruz West, Mumbai',
+        'address': 'Linking Road, Santacruz West',
+        'latitude': 19.0820,
+        'longitude': 72.8420,
+        'phone': '+91 98200 00203',
+        'show_phone': 1,
+        'avatar': '⚡',
+        'availability': 'available'
+    },
+    {
+        'id': 4,
+        'name': 'Vikram Singhal',
+        'business_name': 'FrostAir AC Solutions & Repair',
+        'profession': 'AC Repair',
+        'bio': 'Expert technician for split and inverter AC gas charging, PCB repair, and jet foam deep cleaning.',
+        'hourly_rate': 699.00,
+        'price_type': 'per_visit',
+        'experience_years': 10,
+        'rating_avg': 4.92,
+        'reviews_count': 52,
+        'city': 'Andheri West, Mumbai',
+        'address': 'Lokhandwala Complex, Andheri West',
+        'latitude': 19.1300,
+        'longitude': 72.8250,
+        'phone': '+91 98200 00204',
+        'show_phone': 1,
+        'avatar': '❄️',
+        'availability': 'available'
+    },
+    {
+        'id': 5,
+        'name': 'Rameshwar Suthar',
+        'business_name': 'Heritage Woodcraft & Carpentry',
+        'profession': 'Carpenter',
+        'bio': 'Custom furniture restoration, modular kitchen hinge repair, and lock replacement master.',
+        'hourly_rate': 450.00,
+        'price_type': 'per_hour',
+        'experience_years': 14,
+        'rating_avg': 4.91,
+        'reviews_count': 41,
+        'city': 'Mahim, Mumbai',
+        'address': 'Lady Jamshedji Road, Mahim',
+        'latitude': 19.0350,
+        'longitude': 72.8420,
+        'phone': '+91 98200 00205',
+        'show_phone': 1,
+        'avatar': '🪚',
+        'availability': 'available'
+    },
+    {
+        'id': 6,
+        'name': 'Imran Qureshi',
+        'business_name': 'Speedy Auto & Machine Repair',
+        'profession': 'Mechanic',
+        'bio': 'On-demand mechanical diagnostics, doorstep battery replacement, and appliance motor servicing.',
+        'hourly_rate': 549.00,
+        'price_type': 'per_visit',
+        'experience_years': 8,
+        'rating_avg': 4.88,
+        'reviews_count': 34,
+        'city': 'Dadar West, Mumbai',
+        'address': 'Gokhale Road, Dadar West',
+        'latitude': 19.0190,
+        'longitude': 72.8410,
+        'phone': '+91 98200 00206',
+        'show_phone': 1,
+        'avatar': '🚗',
+        'availability': 'available'
+    },
+    # Providers located outside 25 km (strictly excluded by Haversine formula)
+    {
+        'id': 7,
+        'name': 'Sanjay Deshmukh',
+        'business_name': 'Deccan Solar & Electricals',
+        'profession': 'Electrician',
+        'bio': 'Industrial solar panel installation and commercial electrical substation repair.',
+        'hourly_rate': 899.00,
+        'price_type': 'per_visit',
+        'experience_years': 15,
+        'rating_avg': 4.95,
+        'reviews_count': 22,
+        'city': 'Pune, Maharashtra',
+        'address': 'FC Road, Shivajinagar, Pune',
+        'latitude': 18.5204,
+        'longitude': 73.8567, # ~120 km away
+        'phone': '+91 98200 00207',
+        'show_phone': 1,
+        'avatar': '⚡',
+        'availability': 'available'
+    },
+    {
+        'id': 8,
+        'name': 'Mahesh Jadhav',
+        'business_name': 'Kalyan Deep Plumbing Services',
+        'profession': 'Plumber',
+        'bio': 'Commercial pipeline repair and deep water borewell drilling.',
+        'hourly_rate': 550.00,
+        'price_type': 'per_hour',
+        'experience_years': 11,
+        'rating_avg': 4.80,
+        'reviews_count': 18,
+        'city': 'Kalyan East, Maharashtra',
+        'address': 'Station Road, Kalyan East',
+        'latitude': 19.2403,
+        'longitude': 73.1305, # ~36 km away
+        'phone': '+91 98200 00208',
+        'show_phone': 1,
+        'avatar': '👨‍🔧',
+        'availability': 'available'
+    }
+]
 
 def get_auth_state(headers):
     cookie_str = headers.get('Cookie', '')
@@ -26,16 +200,18 @@ def get_auth_state(headers):
     user_name = urllib.parse.unquote(cookies['auth_name'].value) if 'auth_name' in cookies else ''
     user_address = urllib.parse.unquote(cookies['auth_address'].value) if 'auth_address' in cookies else 'Mumbai, Maharashtra'
     user_fullname = urllib.parse.unquote(cookies['auth_fullname'].value) if 'auth_fullname' in cookies else (user_name if user_name else 'Valued Client')
+    user_lat = float(cookies['auth_lat'].value) if 'auth_lat' in cookies else 19.0760
+    user_lng = float(cookies['auth_lng'].value) if 'auth_lng' in cookies else 72.8777
     
-    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname
+    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng
 
 def render_php_view(view_relative_path, context=None, auth_state=None):
     if context is None:
         context = {}
     if auth_state is None:
-        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client')
+        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client', 19.0760, 72.8777)
     
-    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname = auth_state
+    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng = auth_state
     
     file_path = os.path.join(BASE_DIR, 'app', 'views', view_relative_path)
     if not os.path.exists(file_path):
@@ -247,6 +423,137 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     content = content.replace("<?= $hasActiveOrder ? 'true' : 'false' ?>", "true" if has_active_order else "false")
     content = content.replace("<?= $dashUrl ?>", dash_url)
 
+    # Providers Marketplace Directory Dynamic 25 km Haversine Rendering
+    if view_relative_path == 'providers/index.php':
+        cust_lat = float(context.get('custLat', user_lat))
+        cust_lng = float(context.get('custLng', user_lng))
+        max_radius = min(25.0, float(context.get('radiusKm', 25.0)))
+        selected_prof = context.get('selectedProfession', 'all')
+        sort_by = context.get('sort', 'distance')
+
+        matched_providers = []
+        for p in CATALOG_PROVIDERS:
+            d = calculate_haversine(cust_lat, cust_lng, p['latitude'], p['longitude'])
+            # STRICT FILTER: Provider must be strictly within 25 km (or selected <= 25 km)
+            if d <= max_radius:
+                if selected_prof != 'all' and selected_prof.lower() not in p['profession'].lower():
+                    continue
+                p_item = dict(p)
+                p_item['distance_km'] = d
+                matched_providers.append(p_item)
+
+        # Sort
+        if sort_by == 'price_asc':
+            matched_providers.sort(key=lambda x: x['hourly_rate'])
+        elif sort_by == 'price_desc':
+            matched_providers.sort(key=lambda x: x['hourly_rate'], reverse=True)
+        elif sort_by == 'rating':
+            matched_providers.sort(key=lambda x: x['rating_avg'], reverse=True)
+        else:
+            matched_providers.sort(key=lambda x: x['distance_km'])
+
+        # Generate HTML cards
+        cards_html = ""
+        for p in matched_providers:
+            price_suffix = '/ visit' if p['price_type'] == 'per_visit' else ('fixed' if p['price_type'] == 'fixed' else '/ hr')
+            cards_html += f'''
+              <div class="card card-hoverable tilt-card reveal-on-scroll" style="display: flex; flex-direction: column; justify-content: space-between; border-radius: 24px; border: 1px solid var(--border-light);">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 14px; align-items: center;">
+                      <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--soft-sage); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-xs);">
+                        {p['avatar']}
+                      </div>
+                      <div>
+                        <h4 style="margin: 0; font-size: 1.15rem; color: var(--charcoal);">{p['name']}</h4>
+                        <span class="badge badge-sage" style="font-size: 0.72rem; padding: 2px 8px; margin-top: 4px; display: inline-block;">
+                          {p['profession']}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style="text-align: right;">
+                      <span class="badge badge-terracotta" style="font-size: 0.78rem; font-weight: 700;">
+                        📍 {p['distance_km']} km
+                      </span>
+                      <div style="font-size: 0.72rem; color: var(--status-success); font-weight: 600; margin-top: 4px;">
+                        ● Available Now
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="font-weight: 700; color: var(--forest-green); font-size: 0.98rem; margin-bottom: 8px;">
+                    {p['business_name']}
+                  </div>
+                  <p style="font-size: 0.88rem; color: var(--charcoal-light); margin-bottom: 18px; line-height: 1.5;">
+                    {p['bio']}
+                  </p>
+
+                  <div style="background: var(--bg-muted); border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                    <div>
+                      <span style="color: #D97706; font-weight: 700;">★ {p['rating_avg']:.2f}</span>
+                      <span style="font-size: 0.8rem; color: var(--charcoal-muted);"> ({p['reviews_count']} reviews)</span>
+                    </div>
+                    <div style="font-size: 0.82rem; font-weight: 600; color: var(--forest-green);">
+                      {p['experience_years']} yrs experience
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-top: 12px; border-top: 1px solid var(--border-light);">
+                    <div>
+                      <span style="font-size: 0.78rem; color: var(--charcoal-muted); display: block;">Service Price:</span>
+                      <span style="font-size: 1.35rem; font-weight: 800; color: var(--forest-green);">
+                        ₹{int(p['hourly_rate'])}
+                      </span>
+                      <span style="font-size: 0.82rem; color: var(--charcoal-muted);">
+                        {price_suffix}
+                      </span>
+                    </div>
+                    <a href="tel:{p['phone']}" class="btn btn-sage btn-sm" style="padding: 8px 12px;" title="Call Specialist Directly">
+                      📞 Call
+                    </a>
+                  </div>
+
+                  <div style="display: flex; gap: 10px;">
+                    <a href="/providers/detail/{p['id']}" class="btn btn-primary" style="flex: 1; text-align: center; padding: 11px;">
+                      Book Specialist →
+                    </a>
+                  </div>
+                </div>
+              </div>'''
+
+        content = re.sub(
+            r'<\?php\s+foreach\s*\(\$providers\s+as\s+\$p\):\s*\?>.*?<\?php\s+endforeach;\s*\?>',
+            cards_html,
+            content,
+            flags=re.DOTALL
+        )
+
+        map_items = [{
+            'id': p['id'],
+            'business_name': p['business_name'],
+            'profession': p['profession'],
+            'hourly_rate': p['hourly_rate'],
+            'rating_avg': p['rating_avg'],
+            'distance_km': p['distance_km'],
+            'lat': p['latitude'],
+            'lng': p['longitude'],
+            'profile_url': f'/providers/detail/{p["id"]}'
+        } for p in matched_providers]
+
+        content = re.sub(
+            r'const\s+providersMapData\s*=\s*<\?.*?\?>;',
+            f'const providersMapData = {json.dumps(map_items)};',
+            content,
+            flags=re.DOTALL
+        )
+        content = content.replace("<?= count($providers) ?>", str(len(matched_providers)))
+        content = content.replace("<?= $radiusKm ?>", str(int(max_radius)))
+        content = content.replace("<?= $custLat ?>", str(cust_lat))
+        content = content.replace("<?= $custLng ?>", str(cust_lng))
+
     # Clean remaining unmatched PHP tags safely
     content = re.sub(r'<\?php\s*if\s*\([^)]*\)\s*:\s*\?>', '', content)
     content = re.sub(r'<\?php\s*else\s*:\s*\?>', '', content)
@@ -278,6 +585,8 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', 'auth_fullname=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_address=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_email=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'auth_lat=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'auth_lng=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Location', '/')
             self.end_headers()
@@ -289,7 +598,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             'home/about': ('home/about.php', {'activePage': 'about', 'pageTitle': 'About Us | NEARZO'}),
             'home/contact': ('home/contact.php', {'activePage': 'contact', 'pageTitle': 'Contact Concierge | NEARZO'}),
             'services': ('services/index.php', {'activePage': 'services', 'pageTitle': 'Curated Disciplines | NEARZO'}),
-            'providers': ('providers/index.php', {'activePage': 'providers', 'pageTitle': 'Find Specialists within 15 km | NEARZO'}),
+            'providers': ('providers/index.php', {'activePage': 'providers', 'pageTitle': 'Find Specialists within 25 km | NEARZO'}),
             'booking/track': ('booking/track.php', {'activePage': 'track', 'pageTitle': 'Live Appointment Tracker | NEARZO'}),
             'auth/login': ('auth/login.php', {'activePage': 'auth', 'pageTitle': 'Sign In | NEARZO'}),
             'auth/register': ('auth/register_choose.php', {'activePage': 'auth', 'pageTitle': 'Choose Account Type | NEARZO'}),
@@ -303,6 +612,33 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
         
         if path.startswith('providers/detail'):
             html = render_php_view('providers/detail.php', {'activePage': 'providers', 'pageTitle': 'Specialist Profile | NEARZO'}, auth_state)
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(html.encode('utf-8'))
+            return
+
+        if path == 'providers' or (path.startswith('providers') and not path.startswith('providers/detail')):
+            is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname, user_lat, user_lng = auth_state
+            query_params = urllib.parse.parse_qs(url_parts.query)
+            c_lat = float(query_params.get('lat', [user_lat])[0]) if query_params.get('lat') else user_lat
+            c_lng = float(query_params.get('lng', [user_lng])[0]) if query_params.get('lng') else user_lng
+            c_rad = min(25.0, float(query_params.get('radius', [25.0])[0]))
+            c_prof = query_params.get('profession', ['all'])[0]
+            c_sort = query_params.get('sort', ['distance'])[0]
+            c_loc = query_params.get('location', ['Mumbai'])[0]
+
+            ctx = {
+                'activePage': 'providers',
+                'pageTitle': 'Find Specialists within 25 km | NEARZO',
+                'custLat': c_lat,
+                'custLng': c_lng,
+                'radiusKm': c_rad,
+                'selectedProfession': c_prof,
+                'sort': c_sort,
+                'location': c_loc
+            }
+            html = render_php_view('providers/index.php', ctx, auth_state)
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers()
@@ -354,7 +690,6 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
                 self.send_header('Location', '/provider/dashboard')
             elif 'sophia' in email:
-                # Sophia is the pre-configured demo customer account
                 self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=Sophia; Path=/')
                 self.send_header('Set-Cookie', 'auth_fullname=Sophia%20Miller; Path=/')
@@ -362,7 +697,6 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Set-Cookie', 'active_order=BK-89021; Path=/')
                 self.send_header('Location', '/customer/dashboard')
             else:
-                # Custom registered customer login
                 current_cookies = SimpleCookie(self.headers.get('Cookie', ''))
                 saved_name = current_cookies.get('auth_name')
                 user_first = urllib.parse.unquote(saved_name.value) if saved_name and saved_name.value and saved_name.value != 'Sophia' else (email.split('@')[0].capitalize() if email else 'Customer')
@@ -377,6 +711,8 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             city = params.get('city', ['Mumbai'])[0].strip()
             full_addr = f"{address}, {city}" if address else (city if city else "Mumbai, India")
             email = params.get('email', [''])[0].strip()
+            lat = params.get('latitude', ['19.07600000'])[0].strip()
+            lng = params.get('longitude', ['72.87770000'])[0].strip()
 
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
             self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
@@ -384,7 +720,8 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(full_addr)}; Path=/')
             self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
-            # CLEAR active_order so newly registered customer starts completely fresh with 0 booked services!
+            self.send_header('Set-Cookie', f'auth_lat={urllib.parse.quote(lat)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_lng={urllib.parse.quote(lng)}; Path=/')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Location', '/customer/dashboard')
 

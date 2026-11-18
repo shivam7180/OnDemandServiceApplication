@@ -14,15 +14,15 @@ class ProvidersController extends Controller {
     public function index() {
         $profession = $_GET['profession'] ?? $_GET['service'] ?? $_GET['cat'] ?? 'all';
         $location   = $_GET['location'] ?? 'Mumbai';
-        $custLat    = (float)($_GET['lat'] ?? 19.07600000);
-        $custLng    = (float)($_GET['lng'] ?? 72.87770000);
-        $radiusKm   = (float)($_GET['radius'] ?? 15.0);
+        $custLat    = (float)($_GET['lat'] ?? $_COOKIE['auth_lat'] ?? 19.07600000);
+        $custLng    = (float)($_GET['lng'] ?? $_COOKIE['auth_lng'] ?? 72.87770000);
+        $radiusKm   = min(25.0, (float)($_GET['radius'] ?? 25.0)); // Strictly within 25 km maximum
         $sort       = $_GET['sort'] ?? 'distance';
 
         /** @var Provider $providerModel */
         $providerModel = $this->model('Provider');
         
-        // Find nearby providers using MySQL Haversine formula
+        // Find nearby providers using MySQL Haversine formula strictly within 25 km
         $dbProviders = $providerModel->findNearby($custLat, $custLng, $radiusKm, [
             'profession' => $profession,
             'sort'       => $sort
@@ -61,7 +61,7 @@ class ProvidersController extends Controller {
         }
 
         $data = [
-            'pageTitle'          => 'Find Local Specialists within 15 km | NEARZO',
+            'pageTitle'          => 'Find Local Specialists within 25 km | NEARZO',
             'activePage'         => 'providers',
             'providers'          => $providers,
             'selectedProfession' => $profession,
@@ -272,6 +272,50 @@ class ProvidersController extends Controller {
                 'show_phone'        => 1,
                 'avatar'            => '🚗',
                 'availability'      => 'available'
+            ],
+            7 => [
+                'id'                => 7,
+                'user_id'           => 10,
+                'name'              => 'Sanjay Deshmukh',
+                'business_name'     => 'Deccan Solar & Electricals',
+                'profession'        => 'Electrician',
+                'bio'               => 'Industrial solar panel installation and commercial electrical substation repair.',
+                'hourly_rate'       => 899.00,
+                'price_type'        => 'per_visit',
+                'experience_years'  => 15,
+                'service_radius_km' => 25,
+                'rating_avg'        => 4.95,
+                'reviews_count'     => 22,
+                'city'              => 'Pune, Maharashtra',
+                'address'           => 'FC Road, Shivajinagar, Pune',
+                'latitude'          => 18.52040000,
+                'longitude'         => 73.85670000, // ~120 km away
+                'phone'             => '+91 98200 00207',
+                'show_phone'        => 1,
+                'avatar'            => '⚡',
+                'availability'      => 'available'
+            ],
+            8 => [
+                'id'                => 8,
+                'user_id'           => 11,
+                'name'              => 'Mahesh Jadhav',
+                'business_name'     => 'Kalyan Deep Plumbing Services',
+                'profession'        => 'Plumber',
+                'bio'               => 'Commercial pipeline repair and deep water borewell drilling.',
+                'hourly_rate'       => 550.00,
+                'price_type'        => 'per_hour',
+                'experience_years'  => 11,
+                'service_radius_km' => 25,
+                'rating_avg'        => 4.80,
+                'reviews_count'     => 18,
+                'city'              => 'Kalyan East, Maharashtra',
+                'address'           => 'Station Road, Kalyan East',
+                'latitude'          => 19.24030000,
+                'longitude'         => 73.13050000, // ~36 km away
+                'phone'             => '+91 98200 00208',
+                'show_phone'        => 1,
+                'avatar'            => '👨‍🔧',
+                'availability'      => 'available'
             ]
         ];
 
@@ -281,7 +325,7 @@ class ProvidersController extends Controller {
             $dist = $this->calculateHaversineDistance($custLat, $custLng, $p['latitude'], $p['longitude']);
             $p['distance_km'] = round($dist, 2);
 
-            // Filter by 15 km radius
+            // Filter strictly by maximum 25 km radius (ignore any providers outside 25 km)
             if ($dist > $radiusKm) {
                 continue;
             }

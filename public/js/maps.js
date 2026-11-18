@@ -69,12 +69,12 @@ const AuraMaps = {
       });
       L.marker([savedLat, savedLng], { icon: userIcon })
         .addTo(map)
-        .bindPopup(`<b>Your Search Center</b><br>15 km Marketplace Coverage Area`)
+        .bindPopup(`<b>Your Search Center</b><br>25 km Marketplace Coverage Area`)
         .openPopup();
 
-      // 15 km Radius Circle
+      // 25 km Radius Circle
       L.circle([savedLat, savedLng], {
-        radius: 15000,
+        radius: 25000,
         color: '#234C3D',
         weight: 2,
         opacity: 0.6,

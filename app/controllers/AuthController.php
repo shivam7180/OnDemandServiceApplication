@@ -126,8 +126,10 @@ class AuthController extends Controller {
         $email      = strtolower(trim($_POST['email'] ?? ''));
         $phone      = trim($_POST['phone'] ?? '');
         $address    = trim($_POST['address'] ?? '');
-        $city       = trim($_POST['city'] ?? 'San Francisco');
-        $postalCode = trim($_POST['postal_code'] ?? '');
+        $city       = trim($_POST['city'] ?? 'Mumbai');
+        $postalCode = trim($_POST['postal_code'] ?? '400050');
+        $lat        = (float)($_POST['latitude'] ?? 19.07600000);
+        $lng        = (float)($_POST['longitude'] ?? 72.87770000);
         $password   = $_POST['password'] ?? '';
         $confirm    = $_POST['confirm_password'] ?? '';
 
@@ -175,7 +177,9 @@ class AuthController extends Controller {
             $customerModel->create($userId, [
                 'address'     => $address,
                 'city'        => $city,
-                'postal_code' => $postalCode
+                'postal_code' => $postalCode,
+                'latitude'    => $lat,
+                'longitude'   => $lng
             ]);
 
             session_regenerate_id(true);
@@ -185,8 +189,12 @@ class AuthController extends Controller {
                 'email'     => $email,
                 'phone'     => $phone,
                 'role'      => 'customer',
-                'avatar'    => null
+                'avatar'    => null,
+                'latitude'  => $lat,
+                'longitude' => $lng
             ];
+            setcookie('auth_lat', (string)$lat, time() + 86400 * 30, '/');
+            setcookie('auth_lng', (string)$lng, time() + 86400 * 30, '/');
 
             $_SESSION['flash_success'] = "Welcome to NEARZO! Your customer account has been created.";
             $this->redirect('customer/dashboard');

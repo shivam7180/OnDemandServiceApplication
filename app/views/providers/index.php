@@ -6,9 +6,9 @@
     
     <div style="max-width: 720px; margin: 0 auto; text-align: center;" class="reveal-on-scroll">
       <span class="badge badge-terracotta" style="margin-bottom: 12px;">✦ Two-Sided Marketplace Directory</span>
-      <h1 style="margin-bottom: 12px; font-size: 2.2rem;">Find Nearby Specialists within 15 km</h1>
+      <h1 style="margin-bottom: 12px; font-size: 2.2rem;">Find Nearby Specialists within 25 km</h1>
       <p style="font-size: 1.05rem; color: var(--charcoal-light);">
-        Discover background-checked trade professionals near your exact GPS coordinates with upfront INR pricing.
+        Discover background-checked trade professionals strictly within 25 km of your exact GPS coordinates with upfront INR pricing.
       </p>
     </div>
 
@@ -45,14 +45,15 @@
           <input type="hidden" id="custLng" name="lng" value="<?= $custLng ?>">
         </div>
 
-        <!-- 3. Search Radius (Max 15 km default) -->
+        <!-- 3. Search Radius (Max 25 km limit) -->
         <div>
           <label class="form-label" style="font-size: 0.82rem; margin-bottom: 4px; color: var(--forest-green); font-weight: 700;">Max Radius</label>
           <select name="radius" class="form-control" style="font-size: 0.9rem;">
-            <option value="5" <?= ($radiusKm == 5) ? 'selected' : '' ?>>5 km</option>
+            <option value="25" <?= ($radiusKm == 25) ? 'selected' : '' ?>>25 km (Maximum Coverage)</option>
+            <option value="20" <?= ($radiusKm == 20) ? 'selected' : '' ?>>20 km</option>
+            <option value="15" <?= ($radiusKm == 15) ? 'selected' : '' ?>>15 km</option>
             <option value="10" <?= ($radiusKm == 10) ? 'selected' : '' ?>>10 km</option>
-            <option value="15" <?= ($radiusKm == 15) ? 'selected' : '' ?>>15 km (Standard)</option>
-            <option value="25" <?= ($radiusKm == 25) ? 'selected' : '' ?>>25 km</option>
+            <option value="5" <?= ($radiusKm == 5) ? 'selected' : '' ?>>5 km</option>
           </select>
         </div>
 
@@ -268,7 +269,7 @@ function syncCustomerGPS() {
       localStorage.setItem('user_lng', lng);
       localStorage.setItem('user_location_label', `GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
 
-      AuraCraft.showToast('GPS position locked! Refreshing 15 km radar...', 'success');
+      (window.Nearzo || window.AuraCraft).showToast('GPS position locked! Refreshing 25 km radar...', 'success');
       document.getElementById('marketplaceSearchForm').submit();
     },
     (err) => {
