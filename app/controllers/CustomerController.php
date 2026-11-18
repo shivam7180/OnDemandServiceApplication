@@ -20,7 +20,7 @@ class CustomerController extends Controller {
             'name'    => $user['full_name'],
             'email'   => $user['email'],
             'phone'   => $user['phone'],
-            'address' => $customerProfile['address'] ?? '742 Evergreen Terrace, San Francisco, CA'
+            'address' => !empty($customerProfile['address']) ? $customerProfile['address'] : (!empty($customerProfile['city']) ? $customerProfile['city'] : 'Mumbai, Maharashtra')
         ];
 
         /** @var Booking $bookingModel */
@@ -56,15 +56,15 @@ class CustomerController extends Controller {
             }
         }
 
-        // High quality fallback if database table not yet populated
-        if ($activeBooking === null && empty($pastBookings)) {
+        // Demo bookings only for the preset demo customer account (Sophia)
+        if ($activeBooking === null && empty($pastBookings) && ($user['email'] ?? '') === 'sophia@servicehub.com') {
             $activeBooking = [
                 'code'     => 'BK-89021',
                 'service'  => 'Emergency Pipe Leak & Valve Repair',
                 'provider' => 'David Sterling',
                 'date'     => 'Nov 20, 2026',
                 'time'     => '10:00 AM',
-                'amount'   => 95.00,
+                'amount'   => 499.00,
                 'status'   => 'in_progress'
             ];
 
@@ -74,7 +74,7 @@ class CustomerController extends Controller {
                     'service'  => 'Smart Lighting & Dimmer Integration',
                     'provider' => 'Julian Thorne',
                     'date'     => 'Nov 10, 2026',
-                    'amount'   => 110.00,
+                    'amount'   => 899.00,
                     'status'   => 'completed',
                     'rating'   => 5
                 ]

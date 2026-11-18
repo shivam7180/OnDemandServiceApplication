@@ -16,33 +16,33 @@
 
         <div class="form-group">
           <label class="form-label">Full Name</label>
-          <input type="text" name="full_name" class="form-control" required placeholder="Sophia Miller">
+          <input type="text" name="full_name" class="form-control" required placeholder="e.g. Rahul Sharma">
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Email Address</label>
-            <input type="email" name="email" class="form-control" required placeholder="sophia@example.com">
+            <input type="email" name="email" class="form-control" required placeholder="rahul@example.com">
           </div>
           <div class="form-group">
             <label class="form-label">Phone Number</label>
-            <input type="tel" name="phone" class="form-control" required placeholder="+1 (555) 010-0199">
+            <input type="tel" name="phone" class="form-control" required placeholder="+91 98765 43210">
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label">Default Home Street Address</label>
-          <input type="text" name="address" class="form-control" placeholder="742 Evergreen Terrace, Apt 4B">
+          <input type="text" name="address" class="form-control" placeholder="e.g. Flat 302, Green Acres, Bandra West">
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">City</label>
-            <input type="text" name="city" class="form-control" value="San Francisco">
+            <input type="text" name="city" class="form-control" value="Mumbai">
           </div>
           <div class="form-group">
             <label class="form-label">Postal Code</label>
-            <input type="text" name="postal_code" class="form-control" placeholder="94102">
+            <input type="text" name="postal_code" class="form-control" placeholder="400050">
           </div>
         </div>
 

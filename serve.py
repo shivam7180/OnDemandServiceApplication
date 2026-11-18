@@ -23,17 +23,19 @@ def get_auth_state(headers):
     is_authenticated = 'auth_user' in cookies and bool(cookies['auth_user'].value)
     has_active_order = is_authenticated and ('active_order' in cookies and bool(cookies['active_order'].value))
     user_role = cookies['auth_role'].value if 'auth_role' in cookies else 'customer'
-    user_name = cookies['auth_name'].value if 'auth_name' in cookies else 'Sophia'
+    user_name = urllib.parse.unquote(cookies['auth_name'].value) if 'auth_name' in cookies else ''
+    user_address = urllib.parse.unquote(cookies['auth_address'].value) if 'auth_address' in cookies else 'Mumbai, Maharashtra'
+    user_fullname = urllib.parse.unquote(cookies['auth_fullname'].value) if 'auth_fullname' in cookies else (user_name if user_name else 'Valued Client')
     
-    return is_authenticated, has_active_order, user_role, user_name
+    return is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname
 
 def render_php_view(view_relative_path, context=None, auth_state=None):
     if context is None:
         context = {}
     if auth_state is None:
-        auth_state = (False, False, 'customer', 'Sophia')
+        auth_state = (False, False, 'customer', '', 'Mumbai, Maharashtra', 'Valued Client')
     
-    is_authenticated, has_active_order, user_role, user_name = auth_state
+    is_authenticated, has_active_order, user_role, user_name, user_address, user_fullname = auth_state
     
     file_path = os.path.join(BASE_DIR, 'app', 'views', view_relative_path)
     if not os.path.exists(file_path):
@@ -100,11 +102,74 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
     content = content.replace("<?= number_format($provider['hourly_rate'] ?? 599, 2) ?>", "599.00")
     content = content.replace("<?= (float)($provider['hourly_rate'] ?? 599) ?>", "599.00")
     content = content.replace("<?= nl2br(htmlspecialchars($provider['bio'] ?? '')) ?>", "Licensed master craftsman with over 12 years of residential plumbing, leak detection, and sanitary renovation expertise across Mumbai.")
-    content = content.replace("<?= htmlspecialchars(explode(' ', $customer['name'] ?? 'Sophia Miller')[0]) ?>", user_name)
-    content = content.replace("<?= htmlspecialchars($customer['address'] ?? 'Flat 402, Green Acres, Bandra West, Mumbai') ?>", "Flat 402, Green Acres, Bandra West, Mumbai")
+    # Customer Dashboard dynamic values
+    display_user_name = user_name if user_name else 'Valued Client'
+    display_address = user_address if user_address else 'Mumbai, Maharashtra'
+
+    content = content.replace("<?= htmlspecialchars(explode(' ', $customer['name'] ?? 'Friend')[0]) ?>", display_user_name)
+    content = content.replace("<?= htmlspecialchars(explode(' ', $customer['name'] ?? 'Sophia Miller')[0]) ?>", display_user_name)
+    content = content.replace("<?= htmlspecialchars(explode(' ', $customer['name'])[0]) ?>", display_user_name)
+    content = content.replace("<?= htmlspecialchars($customer['address'] ?? 'Nearby Location') ?>", display_address)
+    content = content.replace("<?= htmlspecialchars($customer['address'] ?? 'Flat 402, Green Acres, Bandra West, Mumbai') ?>", display_address)
+    content = content.replace("<?= htmlspecialchars($customer['address']) ?>", display_address)
+
+    # Dynamic KPI counters for Customer Dashboard
+    active_count = "1" if has_active_order else "0"
+    completed_count = "1" if (user_name == 'Sophia' and not has_active_order) else "0"
+    total_spent = "499" if has_active_order else ("899" if completed_count != "0" else "0")
+    preferred_count = "1" if (user_name == 'Sophia') else "0"
+
+    content = content.replace("<?= $activeCount ?>", active_count)
+    content = content.replace("<?= $completedCount ?>", completed_count)
+    content = content.replace("<?= (int)$totalInvested ?>", total_spent)
+    content = content.replace("<?= $preferredCount ?>", preferred_count)
+    content = content.replace("<?= $activeCount > 0 ? '● 1 In Progress' : 'No active orders' ?>", "● 1 In Progress" if has_active_order else "No active orders")
+    content = content.replace("<?= $activeCount > 0 ? 'var(--status-success)' : 'var(--charcoal-muted)' ?>", "var(--status-success)" if has_active_order else "var(--charcoal-muted)")
+    content = content.replace("<?= $completedCount > 0 ? '100% Satisfied' : 'Fresh Account' ?>", "100% Satisfied" if completed_count != "0" else "Fresh Account")
+
+    # Render Active Booking block vs Empty state
+    if has_active_order:
+        content = re.sub(
+            r'<\?php\s+if\s*\(!empty\(\$activeBooking\)\):\s*\?>\s*(.*?)\s*<\?php\s+else:\s*\?>.*?<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+    else:
+        content = re.sub(
+            r'<\?php\s+if\s*\(!empty\(\$activeBooking\)\):\s*\?>.*?<\?php\s+else:\s*\?>\s*(.*?)\s*<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+    # Render History Table vs Empty state
+    if completed_count != "0":
+        content = re.sub(
+            r'<\?php\s+if\s*\(!empty\(\$pastBookings\)\):\s*\?>\s*(.*?)\s*<\?php\s+else:\s*\?>.*?<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+    else:
+        content = re.sub(
+            r'<\?php\s+if\s*\(!empty\(\$pastBookings\)\):\s*\?>.*?<\?php\s+else:\s*\?>\s*(.*?)\s*<\?php\s+endif;\s*\?>',
+            r'\1',
+            content,
+            flags=re.DOTALL
+        )
+
+    content = content.replace("<?= $activeBooking['code'] ?>", "BK-89021")
+    content = content.replace("<?= ucfirst($activeBooking['status']) ?>", "In Progress")
+    content = content.replace("<?= htmlspecialchars($activeBooking['service']) ?>", "Emergency Pipe Leak & Valve Repair")
+    content = content.replace("<?= htmlspecialchars($activeBooking['provider']) ?>", "David Sterling")
+    content = content.replace("<?= $activeBooking['date'] ?>", "Today")
+    content = content.replace("<?= $activeBooking['time'] ?>", "10:00 AM")
+    content = content.replace("<?= number_format($activeBooking['amount'], 0) ?>", "499")
+
     content = content.replace("<?= htmlspecialchars($booking['code'] ?? 'BK-89021') ?>", "BK-89021")
     content = content.replace("<?= htmlspecialchars($booking['service'] ?? 'Emergency Pipe Leak & Valve Repair') ?>", "Emergency Pipe Leak & Valve Repair")
-    content = content.replace("<?= htmlspecialchars($booking['address'] ?? 'Flat 402, Green Acres, Bandra West, Mumbai') ?>", "Flat 402, Green Acres, Bandra West, Mumbai")
+    content = content.replace("<?= htmlspecialchars($booking['address'] ?? 'Flat 402, Green Acres, Bandra West, Mumbai') ?>", display_address)
     content = content.replace("<?= htmlspecialchars($booking['provider']['name'] ?? 'David Sterling') ?>", "David Sterling")
     content = content.replace("<?= htmlspecialchars($booking['provider']['business'] ?? 'Sterling Master Plumbing') ?>", "Sterling Master Plumbing")
     content = content.replace("<?= $booking['provider']['phone'] ?? '+91 98200 00201' ?>", "+91 98200 00201")
@@ -151,6 +216,7 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
 
     # Replace Nav Actions section
     header_track_display = "inline-flex" if has_active_order else "none"
+    nav_display_name = user_name if user_name else 'Account'
     if is_authenticated:
         actions_html = f'''<div class="nav-actions">
           <a href="/booking/track" id="headerTrackBtn" class="btn btn-secondary btn-sm" style="display: {header_track_display}; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.85rem;" title="Track Live Order">
@@ -161,7 +227,7 @@ def render_php_view(view_relative_path, context=None, auth_state=None):
             🔔 <span style="position: absolute; top: -4px; right: -4px; background: var(--terracotta); color: #FFF; width: 18px; height: 18px; border-radius: 50%; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: 700;">1</span>
           </button>
           <a href="{dash_url}" class="btn btn-sage btn-sm">
-            <span>👤 {user_name}</span>
+            <span>👤 {nav_display_name}</span>
             <span class="badge badge-terracotta" style="font-size: 0.7rem; padding: 2px 8px;">{user_role.capitalize()}</span>
           </a>
           <a href="/auth/logout" class="btn btn-outline btn-sm">Sign Out</a>
@@ -209,6 +275,9 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', 'auth_user=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_role=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'auth_name=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'auth_fullname=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'auth_address=; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'auth_email=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Location', '/')
             self.end_headers()
@@ -262,45 +331,90 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(length).decode('utf-8') if length > 0 else ''
+        params = urllib.parse.parse_qs(post_data)
         
         self.send_response(303)
         
         if 'loginSubmit' in self.path:
+            email = params.get('email', [''])[0].strip().lower()
+            role = params.get('role', ['customer'])[0].strip().lower()
+
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
-            if 'admin' in post_data:
+            if 'admin' in email or 'admin' in post_data:
                 self.send_header('Set-Cookie', 'auth_role=admin; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=Admin; Path=/')
+                self.send_header('Set-Cookie', 'auth_fullname=System%20Admin; Path=/')
+                self.send_header('Set-Cookie', 'auth_address=HQ%20Control%20Room; Path=/')
                 self.send_header('Location', '/admin/dashboard')
-            elif 'provider' in post_data or 'sterling' in post_data or 'david' in post_data:
+            elif role == 'provider' or 'provider' in email or 'sterling' in email or 'david' in email:
                 self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=David; Path=/')
+                self.send_header('Set-Cookie', 'auth_fullname=David%20Sterling; Path=/')
+                self.send_header('Set-Cookie', 'auth_address=Bandra%20West%2C%20Mumbai; Path=/')
                 self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
                 self.send_header('Location', '/provider/dashboard')
-            else:
+            elif 'sophia' in email:
+                # Sophia is the pre-configured demo customer account
                 self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=Sophia; Path=/')
+                self.send_header('Set-Cookie', 'auth_fullname=Sophia%20Miller; Path=/')
+                self.send_header('Set-Cookie', 'auth_address=Flat%20402%2C%20Green%20Acres%2C%20Bandra%20West%2C%20Mumbai; Path=/')
+                self.send_header('Set-Cookie', 'active_order=BK-89021; Path=/')
                 self.send_header('Location', '/customer/dashboard')
+            else:
+                # Custom registered customer login
+                current_cookies = SimpleCookie(self.headers.get('Cookie', ''))
+                saved_name = current_cookies.get('auth_name')
+                user_first = urllib.parse.unquote(saved_name.value) if saved_name and saved_name.value and saved_name.value != 'Sophia' else (email.split('@')[0].capitalize() if email else 'Customer')
+                self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
+                self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(user_first)}; Path=/')
+                self.send_header('Location', '/customer/dashboard')
+
         elif 'registerCustomerSubmit' in self.path:
+            full_name = params.get('full_name', ['Customer'])[0].strip()
+            first_name = full_name.split()[0] if full_name else 'Customer'
+            address = params.get('address', [''])[0].strip()
+            city = params.get('city', ['Mumbai'])[0].strip()
+            full_addr = f"{address}, {city}" if address else (city if city else "Mumbai, India")
+            email = params.get('email', [''])[0].strip()
+
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
             self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
-            self.send_header('Set-Cookie', 'auth_name=Sophia; Path=/')
-            self.send_header('Location', '/customer/dashboard')
-        elif 'registerProviderSubmit' in self.path:
-            # Save provider session and redirect directly to Provider Dashboard!
-            self.send_header('Set-Cookie', 'auth_user=1; Path=/')
-            self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
-            self.send_header('Set-Cookie', 'auth_name=David; Path=/')
-            self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
-            self.send_header('Location', '/provider/dashboard')
-        elif 'create' in self.path:
-            self.send_header('Set-Cookie', 'auth_user=1; Path=/')
-            self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
-            self.send_header('Set-Cookie', 'auth_name=Sophia; Path=/')
-            self.send_header('Set-Cookie', 'active_order=BK-89021; Path=/')
-            self.send_header('Location', '/booking/track')
-        elif 'cancel' in self.path:
+            self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(first_name)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(full_addr)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
+            # CLEAR active_order so newly registered customer starts completely fresh with 0 booked services!
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Location', '/customer/dashboard')
+
+        elif 'registerProviderSubmit' in self.path:
+            full_name = params.get('full_name', ['Provider'])[0].strip()
+            first_name = full_name.split()[0] if full_name else 'Provider'
+            biz_name = params.get('business_name', [full_name])[0].strip()
+            city = params.get('city', ['Mumbai'])[0].strip()
+
+            self.send_header('Set-Cookie', 'auth_user=1; Path=/')
+            self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
+            self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(first_name)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(biz_name)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(city)}; Path=/')
+            self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
+            self.send_header('Location', '/provider/dashboard')
+
+        elif 'create' in self.path:
+            # Service booking submitted by customer!
+            self.send_header('Set-Cookie', 'auth_user=1; Path=/')
+            self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
+            self.send_header('Set-Cookie', 'active_order=BK-89021; Path=/')
+            self.send_header('Location', '/booking/track')
+
+        elif 'cancel' in self.path:
+            # Order cancelled
+            self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
+            self.send_header('Location', '/customer/dashboard')
+
         else:
             self.send_header('Location', '/')
             
