@@ -245,6 +245,8 @@ def geocode_address(query_str):
         pass
     return (19.0760, 72.8777)
 
+REGISTERED_ACCOUNTS = {}
+
 def get_auth_state(headers):
     cookie_str = headers.get('Cookie', '')
     cookies = SimpleCookie(cookie_str)
@@ -849,52 +851,62 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
         
         if 'loginSubmit' in self.path:
             email = params.get('email', [''])[0].strip().lower()
-            role = params.get('role', ['customer'])[0].strip().lower()
+            role = params.get('role', [params.get('intended_role', ['customer'])[0]])[0].strip().lower()
 
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
-            if 'admin' in email or 'admin' in post_data:
+            if email == 'admin@servicehub.com' or ('admin' in email and role == 'admin'):
                 self.send_header('Set-Cookie', 'auth_role=admin; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=Admin; Path=/')
                 self.send_header('Set-Cookie', 'auth_fullname=System%20Admin; Path=/')
                 self.send_header('Set-Cookie', 'auth_address=HQ%20Control%20Room; Path=/')
+                self.send_header('Set-Cookie', 'demo_account=1; Path=/')
                 self.send_header('Location', '/admin/dashboard')
-            elif 'sterling' in email or 'david' in email:
+            elif email == 'david@sterlingcraft.com':
                 self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=David; Path=/')
                 self.send_header('Set-Cookie', 'auth_fullname=David%20Sterling; Path=/')
                 self.send_header('Set-Cookie', 'auth_biz=Sterling%20Master%20Plumbing%20%26%20Heating; Path=/')
                 self.send_header('Set-Cookie', 'auth_address=Bandra%20West%2C%20Mumbai; Path=/')
+                self.send_header('Set-Cookie', 'demo_account=1; Path=/')
                 self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
                 self.send_header('Location', '/provider/dashboard')
-            elif role == 'provider' or 'provider' in email:
-                current_cookies = SimpleCookie(self.headers.get('Cookie', ''))
-                saved_name = current_cookies.get('auth_name')
-                saved_full = current_cookies.get('auth_fullname')
-                saved_biz = current_cookies.get('auth_biz')
-                provider_first = urllib.parse.unquote(saved_name.value) if (saved_name and saved_name.value and saved_name.value != 'David') else (email.split('@')[0].capitalize() if email else 'Provider')
-                provider_full = urllib.parse.unquote(saved_full.value) if (saved_full and saved_full.value and 'Sterling' not in saved_full.value) else provider_first
-                provider_biz_val = urllib.parse.unquote(saved_biz.value) if (saved_biz and saved_biz.value) else f"{provider_full}'s Services"
-                self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
-                self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(provider_first)}; Path=/')
-                self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(provider_full)}; Path=/')
-                self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(provider_biz_val)}; Path=/')
-                self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
-                self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
-                self.send_header('Location', '/provider/dashboard')
-            elif 'sophia' in email:
+            elif email == 'sophia@servicehub.com':
                 self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
                 self.send_header('Set-Cookie', 'auth_name=Sophia; Path=/')
                 self.send_header('Set-Cookie', 'auth_fullname=Sophia%20Miller; Path=/')
                 self.send_header('Set-Cookie', 'auth_address=Flat%20402%2C%20Green%20Acres%2C%20Bandra%20West%2C%20Mumbai; Path=/')
                 self.send_header('Set-Cookie', 'active_order=BK-89021; Path=/')
+                self.send_header('Set-Cookie', 'demo_account=1; Path=/')
                 self.send_header('Location', '/customer/dashboard')
+            elif email in REGISTERED_ACCOUNTS:
+                acc = REGISTERED_ACCOUNTS[email]
+                target_role = acc["role"]
+                self.send_header('Set-Cookie', f'auth_role={target_role}; Path=/')
+                self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(acc["name"])}; Path=/')
+                self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(acc["fullname"])}; Path=/')
+                self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(acc["address"])}; Path=/')
+                self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
+                self.send_header('Set-Cookie', f'auth_lat={acc["lat"]:.8f}; Path=/')
+                self.send_header('Set-Cookie', f'auth_lng={acc["lng"]:.8f}; Path=/')
+                if target_role == 'provider':
+                    self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(acc.get("biz", acc["fullname"]))}; Path=/')
+                    self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
+                self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
+                self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
+                self.send_header('Location', f'/{target_role}/dashboard')
             else:
-                current_cookies = SimpleCookie(self.headers.get('Cookie', ''))
-                saved_name = current_cookies.get('auth_name')
-                user_first = urllib.parse.unquote(saved_name.value) if saved_name and saved_name.value and saved_name.value != 'Sophia' else (email.split('@')[0].capitalize() if email else 'Customer')
-                self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
+                user_first = email.split('@')[0].capitalize() if email else 'User'
+                determined_role = role if role in ['customer', 'provider'] else 'customer'
+                self.send_header('Set-Cookie', f'auth_role={determined_role}; Path=/')
                 self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(user_first)}; Path=/')
-                self.send_header('Location', '/customer/dashboard')
+                self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(user_first)}; Path=/')
+                self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
+                if determined_role == 'provider':
+                    self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(user_first + " Services")}; Path=/')
+                    self.send_header('Set-Cookie', 'prompt_avail=1; Path=/')
+                self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
+                self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
+                self.send_header('Location', f'/{determined_role}/dashboard')
 
         elif 'registerCustomerSubmit' in self.path:
             full_name = params.get('full_name', ['Customer'])[0].strip()
@@ -902,7 +914,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             address = params.get('address', [''])[0].strip()
             city = params.get('city', ['Mumbai'])[0].strip()
             full_addr = f"{address}, {city}" if address else (city if city else "Mumbai, India")
-            email = params.get('email', [''])[0].strip()
+            email = params.get('email', [''])[0].strip().lower()
             lat_str = params.get('latitude', ['19.07600000'])[0].strip()
             lng_str = params.get('longitude', ['72.87770000'])[0].strip()
 
@@ -918,6 +930,16 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 if abs(r_lat - 19.0760) > 0.001 or abs(r_lng - 72.8777) > 0.001:
                     lat_val, lng_val = r_lat, r_lng
 
+            if email:
+                REGISTERED_ACCOUNTS[email] = {
+                    'role': 'customer',
+                    'name': first_name,
+                    'fullname': full_name,
+                    'address': full_addr,
+                    'lat': lat_val,
+                    'lng': lng_val
+                }
+
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
             self.send_header('Set-Cookie', 'auth_role=customer; Path=/')
             self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(first_name)}; Path=/')
@@ -926,6 +948,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
             self.send_header('Set-Cookie', f'auth_lat={lat_val:.8f}; Path=/')
             self.send_header('Set-Cookie', f'auth_lng={lng_val:.8f}; Path=/')
+            self.send_header('Set-Cookie', 'demo_account=; Path=/; Max-Age=0')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')
             self.send_header('Location', '/customer/dashboard')
 
@@ -936,6 +959,7 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
             address = params.get('address', [''])[0].strip()
             city = params.get('city', ['Mumbai'])[0].strip()
             full_addr = f"{address}, {city}" if (address and address != city) else (address if address else city)
+            email = params.get('email', [''])[0].strip().lower()
             lat_str = params.get('latitude', ['19.07600000'])[0].strip()
             lng_str = params.get('longitude', ['72.87770000'])[0].strip()
 
@@ -951,12 +975,24 @@ class AuraHandler(http.server.SimpleHTTPRequestHandler):
                 if abs(r_lat - 19.0760) > 0.001 or abs(r_lng - 72.8777) > 0.001:
                     lat_val, lng_val = r_lat, r_lng
 
+            if email:
+                REGISTERED_ACCOUNTS[email] = {
+                    'role': 'provider',
+                    'name': first_name,
+                    'fullname': full_name,
+                    'biz': biz_name,
+                    'address': full_addr,
+                    'lat': lat_val,
+                    'lng': lng_val
+                }
+
             self.send_header('Set-Cookie', 'auth_user=1; Path=/')
             self.send_header('Set-Cookie', 'auth_role=provider; Path=/')
             self.send_header('Set-Cookie', f'auth_name={urllib.parse.quote(first_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_fullname={urllib.parse.quote(full_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_biz={urllib.parse.quote(biz_name)}; Path=/')
             self.send_header('Set-Cookie', f'auth_address={urllib.parse.quote(full_addr)}; Path=/')
+            self.send_header('Set-Cookie', f'auth_email={urllib.parse.quote(email)}; Path=/')
             self.send_header('Set-Cookie', f'auth_lat={lat_val:.8f}; Path=/')
             self.send_header('Set-Cookie', f'auth_lng={lng_val:.8f}; Path=/')
             self.send_header('Set-Cookie', 'active_order=; Path=/; Max-Age=0')

@@ -43,19 +43,19 @@
 
       <form id="loginForm" method="POST" action="<?= BASE_URL ?>/auth/loginSubmit">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '') ?>">
-        <input type="hidden" id="loginRoleInput" name="intended_role" value="customer">
+        <input type="hidden" id="loginRoleInput" name="role" value="customer">
 
         <div class="form-group">
           <label class="form-label" for="emailInput">Email Address</label>
-          <input type="email" id="emailInput" name="email" class="form-control" required placeholder="sophia@servicehub.com" autocomplete="email">
+          <input type="email" id="emailInput" name="email" class="form-control" required placeholder="Enter your registered email" autocomplete="email">
         </div>
 
         <div class="form-group">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <label class="form-label" for="passwordInput">Password</label>
-            <a href="#" style="font-size: 0.82rem; color: var(--terracotta); font-weight: 600;" onclick="AuraCraft.showToast('Demo password for all accounts is: password', 'info')">Forgot?</a>
+            <a href="#" style="font-size: 0.82rem; color: var(--terracotta); font-weight: 600;" onclick="(window.Nearzo || window.AuraCraft).showToast('Enter your registered account password', 'info')">Forgot?</a>
           </div>
-          <input type="password" id="passwordInput" name="password" class="form-control" required placeholder="••••••••" autocomplete="current-password" value="password">
+          <input type="password" id="passwordInput" name="password" class="form-control" required placeholder="••••••••" autocomplete="current-password" value="">
         </div>
 
         <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
@@ -109,7 +109,6 @@ function switchRole(role) {
     submitBtn.textContent = 'Sign In as Customer →';
     submitBtn.className = 'btn btn-primary btn-lg';
     roleInput.value = 'customer';
-    fillDemo('sophia@servicehub.com', 'password', 'customer');
   } else {
     tabProv.className = 'btn btn-secondary btn-sm';
     tabProv.style.background = 'var(--terracotta)';
@@ -124,7 +123,6 @@ function switchRole(role) {
     submitBtn.textContent = 'Sign In as Service Provider →';
     submitBtn.className = 'btn btn-secondary btn-lg';
     roleInput.value = 'provider';
-    fillDemo('david@sterlingcraft.com', 'password', 'provider');
   }
 }
 
